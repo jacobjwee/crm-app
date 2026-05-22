@@ -50,6 +50,8 @@ export default function Inbox() {
   const [sending,        setSending]        = useState(false);
   const [search,         setSearch]         = useState('');
   const [contactResults, setContactResults] = useState([]);
+  const [expandedMsg,    setExpandedMsg]    = useState(null);
+  const [hoveredMsg,     setHoveredMsg]     = useState(null);
   const msgsEndRef = useRef(null);
   const navigate   = useNavigate();
 
@@ -325,21 +327,44 @@ export default function Inbox() {
                           </span>
                         </div>
                       )}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: isOut ? 'flex-end' : 'flex-start', gap: 3 }}>
+                      <div
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: isOut ? 'flex-end' : 'flex-start', gap: 3 }}
+                        onMouseEnter={() => setHoveredMsg(m.id)}
+                        onMouseLeave={() => setHoveredMsg(null)}
+                      >
                         {m.subject && (
                           <div style={{ fontSize: 10.5, color: T.textFaint, fontStyle: 'italic', maxWidth: '74%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            Re: {m.subject}
+                            {m.subject}
                           </div>
                         )}
-                        <div style={{
-                          maxWidth: '74%', padding: '9px 13px',
-                          borderRadius: isOut ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                          background: isOut ? T.accent : T.surfaceAlt,
-                          border: `1px solid ${isOut ? T.accent : T.border}`,
-                          color: isOut ? '#fff' : T.text,
-                          fontSize: 13.5, lineHeight: 1.5,
-                        }}>
-                          {m.body}
+                        <div style={{ position: 'relative', maxWidth: '74%' }}>
+                          <div style={{
+                            padding: '9px 13px',
+                            borderRadius: isOut ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                            background: isOut ? T.accent : T.surfaceAlt,
+                            border: `1px solid ${isOut ? T.accent : T.border}`,
+                            color: isOut ? '#fff' : T.text,
+                            fontSize: 13.5, lineHeight: 1.5,
+                            whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                          }}>
+                            {m.body}
+                          </div>
+                          {hoveredMsg === m.id && (
+                            <button
+                              onClick={() => setExpandedMsg({ ...m, contactName: activeThread.name, contactEmail: activeThread.email })}
+                              title="Expand email"
+                              style={{
+                                position: 'absolute', top: 6,
+                                ...(isOut ? { left: -32 } : { right: -32 }),
+                                width: 24, height: 24, borderRadius: 5,
+                                background: T.surface, border: `1px solid ${T.border}`,
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: T.textDim, fontSize: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                              }}
+                            >
+                              ⤢
+                            </button>
+                          )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 10.5, color: T.textFaint, fontFamily: T.mono }}>{fmtFull(m.created_at)}</span>
@@ -485,6 +510,118 @@ export default function Inbox() {
           </div>
         )}
       </div>
+
+      {/* ── Email expand modal ───────────────────────── */}
+      {expandedMsg && (
+        <div
+          onClick={() => setExpandedMsg(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(15,20,25,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 32,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: T.surface, borderRadius: 14,
+              width: '100%', maxWidth: 680, maxHeight: '82vh',
+              display: 'flex', flexDirection: 'column',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.22)',
+              fontFamily: "'Geist', system-ui, sans-serif",
+              overflow: 'hidden',
+            }}
+          >
+            {/* Modal header bar */}
+            <div style={{
+              padding: '14px 20px', borderBottom: `1px solid ${T.border}`,
+              display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
+              background: T.surfaceAlt,
+            }}>
+              <ChannelChip channel={expandedMsg.channel} size={11}/>
+              <span style={{ fontSize: 13, fontWeight: 600, color: T.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {expandedMsg.subject || '(no subject)'}
+              </span>
+              <button
+                onClick={() => setExpandedMsg(null)}
+                style={{ background: 'none', border: 'none', fontSize: 20, color: T.textFaint, cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Email metadata */}
+            <div style={{ padding: '14px 20px 12px', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <Avatar name={expandedMsg.direction === 'inbound' ? expandedMsg.contactName : 'Lumen CRM'} size={36}/>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>
+                      {expandedMsg.direction === 'inbound' ? expandedMsg.contactName : 'Lumen CRM'}
+                    </span>
+                    <span style={{ fontSize: 11, color: T.textFaint }}>
+                      {expandedMsg.direction === 'inbound' ? `<${expandedMsg.contactEmail || 'unknown'}>` : '(via CRM)'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: T.textDim }}>
+                    <span style={{ color: T.textFaint }}>To: </span>
+                    {expandedMsg.direction === 'inbound' ? 'You' : expandedMsg.contactName}
+                    {expandedMsg.contactEmail && expandedMsg.direction === 'outbound' && (
+                      <span style={{ color: T.textFaint }}> &lt;{expandedMsg.contactEmail}&gt;</span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: T.textFaint, fontFamily: T.mono, flexShrink: 0, textAlign: 'right' }}>
+                  {fmtFull(expandedMsg.created_at)}
+                  {expandedMsg.status === 'failed' && (
+                    <div style={{ color: T.danger, fontWeight: 600, marginTop: 2 }}>Failed to send</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Email body */}
+            <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
+              <pre style={{
+                margin: 0, fontFamily: "'Geist', system-ui, sans-serif",
+                fontSize: 14, lineHeight: 1.7, color: T.text,
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+              }}>
+                {expandedMsg.body}
+              </pre>
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '12px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 8, flexShrink: 0, background: T.surfaceAlt }}>
+              <button
+                onClick={() => {
+                  setSubject(`Re: ${expandedMsg.subject || ''}`);
+                  setChannel('email');
+                  setExpandedMsg(null);
+                }}
+                style={{
+                  padding: '7px 16px', borderRadius: 7, background: T.accent, color: '#fff',
+                  border: 'none', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
+                  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <SendIcon size={12}/> Reply
+              </button>
+              <button
+                onClick={() => setExpandedMsg(null)}
+                style={{
+                  padding: '7px 14px', borderRadius: 7, background: 'transparent',
+                  color: T.textDim, border: `1px solid ${T.border}`,
+                  fontFamily: 'inherit', fontSize: 12.5, cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

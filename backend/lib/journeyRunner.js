@@ -31,6 +31,34 @@ async function executeStep(enrollment, step, contact) {
       }
       return { status: 'done' };
 
+    case 'send_booking_link': {
+      const bookingUrl = `${process.env.APP_URL || 'http://localhost:5173'}/book`;
+      const channel = cfg.channel || 'email';
+      if (channel === 'sms') {
+        if (!contact.phone) return { status: 'skipped', error: 'No phone number' };
+        const body = cfg.message
+          ? `${cfg.message}\n\nBook your appointment: ${bookingUrl}`
+          : `Hi ${contact.name}, book your appointment here: ${bookingUrl}`;
+        await sendSMS({ to: contact.phone, body });
+      } else {
+        if (!contact.email) return { status: 'skipped', error: 'No email address' };
+        const introHtml = cfg.message
+          ? `<p style="margin:0 0 20px;color:#666;font-size:15px;">${cfg.message}</p>` : '';
+        await sendEmail({
+          to: contact.email,
+          subject: cfg.subject || 'Book Your Appointment',
+          body: `<div style="max-width:520px;margin:0 auto;font-family:-apple-system,sans-serif;padding:40px 24px;text-align:center;">
+            <h2 style="margin:0 0 8px;color:#1a2332;font-size:24px;">Book an Appointment</h2>
+            <p style="margin:0 0 16px;color:#666;">Hi ${contact.name},</p>
+            ${introHtml}
+            <a href="${bookingUrl}" style="display:inline-block;padding:14px 36px;background:#4facfe;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:15px;">Schedule Now →</a>
+            <p style="margin:24px 0 0;font-size:12px;color:#b0bec5;">Or copy: <a href="${bookingUrl}" style="color:#4facfe;">${bookingUrl}</a></p>
+          </div>`,
+        });
+      }
+      return { status: 'sent' };
+    }
+
     default:
       return { status: 'skipped', error: `Unknown step type: ${step.type}` };
   }

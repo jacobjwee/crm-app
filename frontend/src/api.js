@@ -45,3 +45,5 @@ export const createAppointment = (data) => request('/appointments', { method: 'P
 export const updateAppointment = (id, data) => request(`/appointments/${id}`, { method: 'PUT', body: data });
 export const deleteAppointment = (id) => request(`/appointments/${id}`, { method: 'DELETE' });
 export const sendSchedule = (data) => request('/appointments/send', { method: 'POST', body: data });
+export const sendBookingLink = (contact_id, channel) =>
+  request('/booking/send', { method: 'POST', body: { contact_id, channel } });

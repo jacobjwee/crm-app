@@ -15,10 +15,11 @@ import RichEmailEditor from '../components/RichEmailEditor';
 
 // ─── Step metadata ─────────────────────────────────────────────────────────
 const STEP_TYPES = {
-  wait:          { label: 'Wait',          icon: '⏱', color: '#f7971e', bg: '#fff8ee' },
-  send_email:    { label: 'Send Email',     icon: '✉',  color: '#2980b9', bg: '#eaf2fd' },
-  send_sms:      { label: 'Send SMS',       icon: '💬', color: '#27ae60', bg: '#eafaf1' },
-  update_status: { label: 'Update Status', icon: '🏷',  color: '#8e44ad', bg: '#f5eafb' },
+  wait:               { label: 'Wait',          icon: '⏱', color: '#f7971e', bg: '#fff8ee' },
+  send_email:         { label: 'Send Email',     icon: '✉',  color: '#2980b9', bg: '#eaf2fd' },
+  send_sms:           { label: 'Send SMS',       icon: '💬', color: '#27ae60', bg: '#eafaf1' },
+  update_status:      { label: 'Update Status', icon: '🏷',  color: '#8e44ad', bg: '#f5eafb' },
+  send_booking_link:  { label: 'Booking Link',  icon: '📅', color: '#00b894', bg: '#e8fff8' },
 };
 
 const TRIGGER_TYPES = [
@@ -90,6 +91,43 @@ function SendSmsEditor({ config, onChange }) {
   );
 }
 
+function SendBookingLinkEditor({ config, onChange }) {
+  const bookingUrl = `${window.location.origin}/book`;
+  return (
+    <div className="step-fields" style={{ flexDirection: 'column', gap: 8 }}>
+      <div className="step-fields">
+        <span style={{ fontSize: 14, color: '#7f8c9a' }}>Send via</span>
+        <select
+          value={config.channel ?? 'email'}
+          onChange={e => onChange({ ...config, channel: e.target.value })}
+          className="step-inline-select"
+        >
+          <option value="email">Email</option>
+          <option value="sms">SMS</option>
+        </select>
+      </div>
+      {(config.channel ?? 'email') === 'email' && (
+        <input
+          value={config.subject ?? ''}
+          placeholder="Email subject (default: Book Your Appointment)"
+          onChange={e => onChange({ ...config, subject: e.target.value })}
+          className="step-text-input"
+        />
+      )}
+      <textarea
+        value={config.message ?? ''}
+        placeholder="Optional message before the booking link…"
+        onChange={e => onChange({ ...config, message: e.target.value })}
+        className="step-textarea"
+        rows={2}
+      />
+      <div style={{ fontSize: 12, color: '#b0bec5', marginTop: 2 }}>
+        Link will point to: <span style={{ color: '#4facfe' }}>{bookingUrl}</span>
+      </div>
+    </div>
+  );
+}
+
 function UpdateStatusEditor({ config, onChange }) {
   return (
     <div className="step-fields">
@@ -130,7 +168,8 @@ function SortableStep({ step, onUpdate, onDelete }) {
         {step.type === 'wait'          && <WaitEditor          config={step.config || {}} onChange={updateConfig} />}
         {step.type === 'send_email'    && <SendEmailEditor     config={step.config || {}} onChange={updateConfig} />}
         {step.type === 'send_sms'      && <SendSmsEditor       config={step.config || {}} onChange={updateConfig} />}
-        {step.type === 'update_status' && <UpdateStatusEditor  config={step.config || {}} onChange={updateConfig} />}
+        {step.type === 'update_status'     && <UpdateStatusEditor      config={step.config || {}} onChange={updateConfig} />}
+        {step.type === 'send_booking_link' && <SendBookingLinkEditor   config={step.config || {}} onChange={updateConfig} />}
       </div>
     </div>
   );

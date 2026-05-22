@@ -24,6 +24,18 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contact_id INTEGER NOT NULL,
+    channel TEXT NOT NULL,
+    direction TEXT NOT NULL DEFAULT 'outbound',
+    subject TEXT,
+    body TEXT NOT NULL,
+    status TEXT DEFAULT 'sent',
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+  );
 `);
 
 module.exports = db;

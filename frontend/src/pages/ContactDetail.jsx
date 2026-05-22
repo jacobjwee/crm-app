@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchContact, updateContact, deleteContact, fetchNotes, createNote, deleteNote } from '../api';
+import { fetchContact, updateContact, deleteContact, fetchNotes, createNote, deleteNote, fetchMessages, sendMessage } from '../api';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from '../lib/toast';
@@ -24,12 +24,18 @@ export default function ContactDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [msgChannel, setMsgChannel] = useState('email');
+  const [msgSubject, setMsgSubject] = useState('');
+  const [msgBody, setMsgBody] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    Promise.all([fetchContact(id), fetchNotes(id)])
-      .then(([c, n]) => {
+    Promise.all([fetchContact(id), fetchNotes(id), fetchMessages(id)])
+      .then(([c, n, m]) => {
         setContact(c);
         setNotes(n);
+        setMessages(m);
         setForm({ name: c.name, email: c.email || '', phone: c.phone || '', company: c.company || '', status: c.status });
       })
       .catch(console.error)
@@ -84,6 +90,23 @@ export default function ContactDetail() {
       navigate('/contacts');
     } catch (err) {
       toast.error(err.message);
+    }
+  }
+
+  async function handleSendMessage(e) {
+    e.preventDefault();
+    if (!msgBody.trim()) return;
+    setSending(true);
+    try {
+      const msg = await sendMessage(id, msgChannel, msgBody.trim(), msgSubject.trim());
+      setMessages(prev => [...prev, msg]);
+      setMsgBody('');
+      setMsgSubject('');
+      toast.success(`${msgChannel === 'email' ? 'Email' : 'SMS'} sent`);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSending(false);
     }
   }
 
@@ -179,6 +202,75 @@ export default function ContactDetail() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 600 }}>
+            Messages <span style={{ color: '#95a5b3', fontWeight: 400 }}>({messages.length})</span>
+          </h2>
+          <div className="channel-tabs">
+            <button
+              className={`channel-tab${msgChannel === 'email' ? ' active' : ''}`}
+              onClick={() => setMsgChannel('email')}
+            >✉ Email</button>
+            <button
+              className={`channel-tab${msgChannel === 'sms' ? ' active' : ''}`}
+              onClick={() => setMsgChannel('sms')}
+            >💬 SMS</button>
+          </div>
+        </div>
+
+        <div className="message-thread">
+          {messages.length === 0 ? (
+            <div className="empty-state" style={{ padding: '24px 0' }}>
+              <p>No messages yet. Send the first one below.</p>
+            </div>
+          ) : (
+            messages.map(msg => (
+              <div key={msg.id} className={`message-bubble ${msg.status === 'failed' ? 'failed' : ''}`}>
+                <div className="message-meta">
+                  <span className={`channel-pill ${msg.channel}`}>
+                    {msg.channel === 'email' ? '✉' : '💬'} {msg.channel}
+                  </span>
+                  {msg.subject && <span className="message-subject">{msg.subject}</span>}
+                  {msg.status === 'failed' && <span className="message-failed">failed</span>}
+                  <span className="message-time">{new Date(msg.created_at).toLocaleString()}</span>
+                </div>
+                <p className="message-body">{msg.body}</p>
+              </div>
+            ))
+          )}
+        </div>
+
+        <form onSubmit={handleSendMessage} className="message-compose">
+          {msgChannel === 'email' && (
+            <input
+              value={msgSubject}
+              onChange={e => setMsgSubject(e.target.value)}
+              placeholder="Subject (optional)"
+              className="message-subject-input"
+            />
+          )}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <textarea
+              value={msgBody}
+              onChange={e => setMsgBody(e.target.value)}
+              placeholder={msgChannel === 'email' ? 'Write your email…' : 'Write your SMS (160 chars recommended)…'}
+              className="message-body-input"
+              maxLength={msgChannel === 'sms' ? 1600 : undefined}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && e.metaKey) handleSendMessage(e);
+              }}
+            />
+            <button type="submit" className="btn btn-primary" disabled={sending || !msgBody.trim()} style={{ alignSelf: 'flex-end' }}>
+              {sending ? 'Sending…' : `Send ${msgChannel === 'email' ? 'Email' : 'SMS'}`}
+            </button>
+          </div>
+          {msgChannel === 'sms' && msgBody.length > 0 && (
+            <div style={{ fontSize: 12, color: '#95a5b3', marginTop: 4 }}>{msgBody.length} / 160 chars</div>
+          )}
+        </form>
       </div>
 
       {showEdit && (

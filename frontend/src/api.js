@@ -23,3 +23,6 @@ export const fetchNotes = (contactId) => request(`/notes/contact/${contactId}`);
 export const createNote = (contactId, content) =>
   request('/notes', { method: 'POST', body: { contact_id: contactId, content } });
 export const deleteNote = (id) => request(`/notes/${id}`, { method: 'DELETE' });
+export const fetchMessages = (contactId) => request(`/messages/contact/${contactId}`);
+export const sendMessage = (contact_id, channel, body, subject = '') =>
+  request('/messages/send', { method: 'POST', body: { contact_id, channel, body, subject } });

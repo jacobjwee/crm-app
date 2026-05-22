@@ -1205,8 +1205,8 @@ tbody tr:hover td {
 .rich-email-editor {
   border: 1px solid #dde2e8;
   border-radius: 10px;
-  overflow: hidden;
   background: #fff;
+  position: relative;
 }
 
 .editor-tabs {
@@ -1216,6 +1216,7 @@ tbody tr:hover td {
   padding: 6px 8px;
   background: #f5f7fa;
   border-bottom: 1px solid #dde2e8;
+  border-radius: 10px 10px 0 0;
 }
 
 .editor-tab {

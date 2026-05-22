@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchContacts, createContact, updateContact, deleteContact } from '../api';
 import Modal from '../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { toast } from '../lib/toast';
 
 function avatarColor(name) {
   const palette = ['#4facfe', '#43e97b', '#fa709a', '#a18cd1', '#f7971e', '#00c9ff'];
@@ -20,6 +22,7 @@ export default function Contacts() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(BLANK);
   const [saving, setSaving] = useState(false);
+  const [confirmId, setConfirmId] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -54,25 +57,29 @@ export default function Contacts() {
     try {
       if (editing) {
         await updateContact(editing.id, form);
+        toast.success(`${form.name} updated`);
       } else {
         await createContact(form);
+        toast.success(`${form.name} added`);
       }
       setShowModal(false);
       load();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete(id) {
-    if (!window.confirm('Delete this contact and all their notes?')) return;
+  async function handleDeleteConfirm() {
+    const id = confirmId;
+    setConfirmId(null);
     try {
       await deleteContact(id);
       setContacts(prev => prev.filter(c => c.id !== id));
+      toast.success('Contact deleted');
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   }
 
@@ -131,7 +138,7 @@ export default function Contacts() {
                   <td>
                     <div className="action-buttons">
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(c)}>Edit</button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(c.id)}>Delete</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => setConfirmId(c.id)}>Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -180,6 +187,14 @@ export default function Contacts() {
             </div>
           </form>
         </Modal>
+      )}
+
+      {confirmId && (
+        <ConfirmDialog
+          message="This will permanently delete the contact and all their notes."
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setConfirmId(null)}
+        />
       )}
     </div>
   );

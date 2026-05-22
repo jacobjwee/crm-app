@@ -3,12 +3,14 @@ import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
 import Contacts from './pages/Contacts';
 import ContactDetail from './pages/ContactDetail';
+import Toaster from './components/Toaster';
 
 export default function App() {
   return (
     <BrowserRouter>
       <div className="app">
         <Navbar />
+        <Toaster />
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

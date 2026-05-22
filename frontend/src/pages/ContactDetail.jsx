@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { fetchContact, updateContact, deleteContact, fetchNotes, createNote, deleteNote } from '../api';
 import Modal from '../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { toast } from '../lib/toast';
 
 function avatarColor(name) {
   const palette = ['#4facfe', '#43e97b', '#fa709a', '#a18cd1', '#f7971e', '#00c9ff'];
@@ -19,6 +21,7 @@ export default function ContactDetail() {
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -41,8 +44,9 @@ export default function ContactDetail() {
       const note = await createNote(id, noteText.trim());
       setNotes(prev => [note, ...prev]);
       setNoteText('');
+      toast.success('Note added');
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSavingNote(false);
     }
@@ -52,8 +56,9 @@ export default function ContactDetail() {
     try {
       await deleteNote(noteId);
       setNotes(prev => prev.filter(n => n.id !== noteId));
+      toast.success('Note deleted');
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   }
 
@@ -64,20 +69,21 @@ export default function ContactDetail() {
       const updated = await updateContact(id, form);
       setContact(updated);
       setShowEdit(false);
+      toast.success('Contact updated');
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete() {
-    if (!window.confirm('Delete this contact and all their notes?')) return;
+  async function handleDeleteConfirm() {
+    setShowDeleteConfirm(false);
     try {
       await deleteContact(id);
       navigate('/contacts');
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   }
 
@@ -105,7 +111,7 @@ export default function ContactDetail() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary" onClick={() => setShowEdit(true)}>Edit</button>
-          <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
+          <button className="btn btn-danger" onClick={() => setShowDeleteConfirm(true)}>Delete</button>
         </div>
       </div>
 
@@ -214,6 +220,14 @@ export default function ContactDetail() {
             </div>
           </form>
         </Modal>
+      )}
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          message="This will permanently delete the contact and all their notes."
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       )}
     </div>
   );

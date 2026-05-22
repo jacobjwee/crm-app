@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchInboxThreads, fetchMessages, sendMessage } from '../api';
+import { fetchInboxThreads, fetchMessages, sendMessage, fetchContacts } from '../api';
 import { toast } from '../lib/toast';
 import {
   Avatar, ChannelChip,
@@ -47,8 +47,9 @@ export default function Inbox() {
   const [channel,      setChannel]      = useState('email');
   const [subject,      setSubject]      = useState('');
   const [body,         setBody]         = useState('');
-  const [sending,      setSending]      = useState(false);
-  const [search,       setSearch]       = useState('');
+  const [sending,        setSending]        = useState(false);
+  const [search,         setSearch]         = useState('');
+  const [contactResults, setContactResults] = useState([]);
   const msgsEndRef = useRef(null);
   const navigate   = useNavigate();
 
@@ -87,14 +88,49 @@ export default function Inbox() {
       setMessages(prev => [...prev, msg]);
       setBody('');
       setSubject('');
-      // refresh thread list so preview updates
-      fetchInboxThreads().then(setThreads).catch(() => {});
+      // refresh thread list so preview updates (and new conversations appear)
+      fetchInboxThreads().then(data => {
+        setThreads(data);
+        // keep the active thread in sync with the real thread data
+        const updated = data.find(t => t.contact_id === activeThread.contact_id);
+        if (updated) setActiveThread(updated);
+      }).catch(() => {});
       toast.success('Message sent');
     } catch (err) {
       toast.error(err.message);
     } finally {
       setSending(false);
     }
+  }
+
+  // Search contacts when typing, to offer "start conversation"
+  useEffect(() => {
+    if (!search.trim()) { setContactResults([]); return; }
+    const t = setTimeout(() => {
+      fetchContacts(search)
+        .then(all => {
+          const threadIds = new Set(threads.map(t => t.contact_id));
+          setContactResults(all.filter(c => !threadIds.has(c.id)));
+        })
+        .catch(() => {});
+    }, 200);
+    return () => clearTimeout(t);
+  }, [search, threads]);
+
+  function startConversation(contact) {
+    setActiveThread({
+      contact_id:    contact.id,
+      name:          contact.name,
+      email:         contact.email || '',
+      phone:         contact.phone || '',
+      status:        contact.status,
+      channel:       contact.email ? 'email' : 'sms',
+      preview:       null,
+      message_count: 0,
+      created_at:    null,
+    });
+    setSearch('');
+    setContactResults([]);
   }
 
   const filtered = threads.filter(t =>
@@ -137,47 +173,99 @@ export default function Inbox() {
         <div style={{ flex: 1, overflow: 'auto' }}>
           {loadingThreads ? (
             <div style={{ padding: 40, textAlign: 'center', color: T.textFaint, fontSize: 13 }}>Loading…</div>
-          ) : filtered.length === 0 ? (
-            <div style={{ padding: '40px 24px', textAlign: 'center', color: T.textFaint }}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
-              <p style={{ fontSize: 12.5 }}>No messages yet. Send a message to a patient to start a thread.</p>
-            </div>
           ) : (
-            filtered.map(t => {
-              const isActive = activeThread?.contact_id === t.contact_id;
-              return (
-                <div
-                  key={t.contact_id}
-                  onClick={() => setActiveThread(t)}
-                  style={{
-                    padding: '11px 14px', borderBottom: `1px solid ${T.border}`,
-                    cursor: 'pointer',
-                    background: isActive ? T.accentSoft : 'transparent',
-                    borderLeft: isActive ? `2px solid ${T.accent}` : '2px solid transparent',
-                    paddingLeft: isActive ? 12 : 14,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
-                    <Avatar name={t.name} size={32}/>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: T.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {t.name}
-                        </span>
-                        <span style={{ fontSize: 10.5, color: T.textFaint, fontFamily: T.mono, flexShrink: 0 }}>{fmtTime(t.created_at)}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
-                        <ChannelChip channel={t.channel} size={11}/>
-                        <span style={{ fontSize: 10.5, color: T.textFaint, fontFamily: T.mono }}>{t.message_count} msg{t.message_count !== 1 ? 's' : ''}</span>
-                      </div>
-                      <div style={{ fontSize: 12, color: T.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {t.direction === 'outbound' ? '→ ' : ''}{t.preview}
+            <>
+              {/* Existing threads */}
+              {filtered.length === 0 && !search && (
+                <div style={{ padding: '40px 24px', textAlign: 'center', color: T.textFaint }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
+                  <p style={{ fontSize: 12.5 }}>No messages yet. Search for a patient above to start a conversation.</p>
+                </div>
+              )}
+              {filtered.map(t => {
+                const isActive = activeThread?.contact_id === t.contact_id;
+                return (
+                  <div
+                    key={t.contact_id}
+                    onClick={() => setActiveThread(t)}
+                    style={{
+                      padding: '11px 14px', borderBottom: `1px solid ${T.border}`,
+                      cursor: 'pointer',
+                      background: isActive ? T.accentSoft : 'transparent',
+                      borderLeft: isActive ? `2px solid ${T.accent}` : '2px solid transparent',
+                      paddingLeft: isActive ? 12 : 14,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
+                      <Avatar name={t.name} size={32}/>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <span style={{ fontSize: 12.5, fontWeight: 600, color: T.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {t.name}
+                          </span>
+                          <span style={{ fontSize: 10.5, color: T.textFaint, fontFamily: T.mono, flexShrink: 0 }}>{fmtTime(t.created_at)}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                          <ChannelChip channel={t.channel} size={11}/>
+                          <span style={{ fontSize: 10.5, color: T.textFaint, fontFamily: T.mono }}>{t.message_count} msg{t.message_count !== 1 ? 's' : ''}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: T.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {t.direction === 'outbound' ? '→ ' : ''}{t.preview}
+                        </div>
                       </div>
                     </div>
                   </div>
+                );
+              })}
+
+              {/* New conversation suggestions */}
+              {contactResults.length > 0 && (
+                <>
+                  <div style={{
+                    padding: '8px 14px 5px',
+                    fontSize: 10.5, fontWeight: 600, color: T.textFaint,
+                    textTransform: 'uppercase', letterSpacing: '0.07em',
+                    borderTop: filtered.length > 0 ? `1px solid ${T.border}` : 'none',
+                    background: T.surfaceAlt,
+                  }}>
+                    Start new conversation
+                  </div>
+                  {contactResults.map(c => (
+                    <div
+                      key={c.id}
+                      onClick={() => startConversation(c)}
+                      style={{
+                        padding: '10px 14px', borderBottom: `1px solid ${T.border}`,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9,
+                      }}
+                    >
+                      <Avatar name={c.name} size={32}/>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 500, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.name}
+                        </div>
+                        <div style={{ fontSize: 11.5, color: T.textFaint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.email || c.phone || 'No contact info'}
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: 10.5, padding: '2px 7px', borderRadius: 4,
+                        background: T.accentSoft, color: T.accent, fontWeight: 600, flexShrink: 0,
+                      }}>
+                        New
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* No results at all */}
+              {search && filtered.length === 0 && contactResults.length === 0 && (
+                <div style={{ padding: '24px 18px', textAlign: 'center', color: T.textFaint, fontSize: 12.5 }}>
+                  No patients found matching "{search}"
                 </div>
-              );
-            })
+              )}
+            </>
           )}
         </div>
       </div>

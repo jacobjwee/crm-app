@@ -119,5 +119,19 @@ db.exec(`
 try { db.exec('ALTER TABLE journeys ADD COLUMN next_run_at TEXT'); } catch (_) {}
 // Track external message IDs (e.g. IMAP Message-ID) to avoid duplicate imports
 try { db.exec('ALTER TABLE messages ADD COLUMN external_id TEXT UNIQUE'); } catch (_) {}
+// Expanded patient fields
+try { db.exec('ALTER TABLE contacts ADD COLUMN first_name TEXT'); } catch (_) {}
+try { db.exec('ALTER TABLE contacts ADD COLUMN last_name TEXT'); } catch (_) {}
+try { db.exec('ALTER TABLE contacts ADD COLUMN preferred_name TEXT'); } catch (_) {}
+try { db.exec('ALTER TABLE contacts ADD COLUMN date_of_birth TEXT'); } catch (_) {}
+try { db.exec('ALTER TABLE contacts ADD COLUMN preferred_channel TEXT DEFAULT \'email\''); } catch (_) {}
+// Migrate existing contacts: split name into first/last
+db.exec(`
+  UPDATE contacts
+  SET
+    first_name = CASE WHEN instr(name, ' ') > 0 THEN substr(name, 1, instr(name, ' ') - 1) ELSE name END,
+    last_name  = CASE WHEN instr(name, ' ') > 0 THEN substr(name, instr(name, ' ') + 1) ELSE '' END
+  WHERE first_name IS NULL
+`);
 
 module.exports = db;

@@ -48,7 +48,12 @@ export default function ContactDetail() {
         setContact(c);
         setNotes(n);
         setMessages(m);
-        setForm({ name: c.name, email: c.email || '', phone: c.phone || '', company: c.company || '', status: c.status });
+        setForm({
+          first_name: c.first_name || '', last_name: c.last_name || '',
+          preferred_name: c.preferred_name || '', date_of_birth: c.date_of_birth || '',
+          email: c.email || '', phone: c.phone || '',
+          preferred_channel: c.preferred_channel || 'email', status: c.status,
+        });
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -130,7 +135,9 @@ export default function ContactDetail() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.textDim, marginBottom: 0 }}>
         <Link to="/contacts" style={{ color: T.textDim, textDecoration: 'none', cursor: 'pointer' }}>Patients</Link>
         <ChevronRightIcon size={11} stroke={T.textFaint}/>
-        <span style={{ color: T.text, fontWeight: 500 }}>{contact.name}</span>
+        <span style={{ color: T.text, fontWeight: 500 }}>
+          {[contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.name}
+        </span>
         <span style={{ marginLeft: 'auto', fontFamily: T.mono, fontSize: 11, color: T.textFaint }}>
           ID #{contact.id}
         </span>
@@ -139,18 +146,24 @@ export default function ContactDetail() {
       {/* Profile header */}
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '24px 28px', margin: '14px 0 0' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
-          <Avatar name={contact.name} size={72}/>
+          <Avatar name={[contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.name} size={72}/>
           <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>{contact.name}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>
+                {[contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.name}
+              </h1>
               <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 4, background: ss.bg, color: ss.fg, fontWeight: 600 }}>
                 {contact.status}
               </span>
             </div>
+            {contact.preferred_name && (
+              <div style={{ fontSize: 13, color: T.textDim, marginBottom: 6 }}>Goes by <strong>"{contact.preferred_name}"</strong></div>
+            )}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, fontSize: 12.5, color: T.textDim }}>
+              {contact.date_of_birth && <div><span style={{ color: T.textFaint }}>DOB </span>{new Date(contact.date_of_birth + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
               {contact.email && <div><span style={{ color: T.textFaint }}>Email </span>{contact.email}</div>}
-              {contact.phone && <div><span style={{ color: T.textFaint }}>Phone </span>{contact.phone}</div>}
-              {contact.company && <div><span style={{ color: T.textFaint }}>Company </span>{contact.company}</div>}
+              {contact.phone && <div><span style={{ color: T.textFaint }}>Mobile </span>{contact.phone}</div>}
+              {contact.preferred_channel && <div><span style={{ color: T.textFaint }}>Prefers </span>{contact.preferred_channel}</div>}
               <div><span style={{ color: T.textFaint }}>Since </span>{new Date(contact.created_at).toLocaleDateString()}</div>
             </div>
           </div>
@@ -240,21 +253,23 @@ export default function ContactDetail() {
           {/* Contact info card */}
           <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px' }}>
             <div style={{ fontSize: 11, color: T.textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Contact info</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12.5 }}>
-              {[['Email', contact.email], ['Phone', contact.phone], ['Company', contact.company]].map(([l, v]) => (
-                <div key={l} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: `1px solid ${T.border}` }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, fontSize: 12.5 }}>
+              {[
+                ['First name',  contact.first_name],
+                ['Last name',   contact.last_name],
+                ['Preferred',   contact.preferred_name],
+                ['Date of birth', contact.date_of_birth ? new Date(contact.date_of_birth + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null],
+                ['Mobile',      contact.phone],
+                ['Email',       contact.email],
+                ['Pref. channel', contact.preferred_channel],
+              ].map(([l, v], idx, arr) => (
+                <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: idx < arr.length - 1 ? `1px solid ${T.border}` : 'none' }}>
                   <span style={{ color: T.textDim }}>{l}</span>
                   <span style={{ fontWeight: 500, color: v ? T.text : T.textFaint, textAlign: 'right', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {v || '—'}
                   </span>
                 </div>
               ))}
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: T.textDim }}>Status</span>
-                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: ss.bg, color: ss.fg, fontWeight: 600 }}>
-                  {contact.status}
-                </span>
-              </div>
             </div>
           </div>
 
@@ -282,31 +297,51 @@ export default function ContactDetail() {
           <form onSubmit={handleEditSubmit}>
             <div className="form-row">
               <div className="form-group">
-                <label>Name *</label>
-                <input required value={form.name} onChange={field('name')} />
+                <label>First Name *</label>
+                <input required value={form.first_name} onChange={field('first_name')} />
               </div>
               <div className="form-group">
-                <label>Company</label>
-                <input value={form.company} onChange={field('company')} />
+                <label>Last Name</label>
+                <input value={form.last_name} onChange={field('last_name')} />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Email</label>
+                <label>Preferred Name</label>
+                <input value={form.preferred_name} onChange={field('preferred_name')} placeholder="e.g. Nickname" />
+              </div>
+              <div className="form-group">
+                <label>Date of Birth</label>
+                <input type="date" value={form.date_of_birth} onChange={field('date_of_birth')} />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Email Address</label>
                 <input type="email" value={form.email} onChange={field('email')} />
               </div>
               <div className="form-group">
-                <label>Phone</label>
+                <label>Mobile Phone</label>
                 <input value={form.phone} onChange={field('phone')} />
               </div>
             </div>
-            <div className="form-group">
-              <label>Status</label>
-              <select value={form.status} onChange={field('status')}>
-                <option value="active">Active</option>
-                <option value="lead">Lead</option>
-                <option value="inactive">Inactive</option>
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Preferred Channel</label>
+                <select value={form.preferred_channel} onChange={field('preferred_channel')}>
+                  {['email','sms','whatsapp','voice'].map(ch => (
+                    <option key={ch} value={ch}>{ch.charAt(0).toUpperCase() + ch.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Status</label>
+                <select value={form.status} onChange={field('status')}>
+                  <option value="active">Active</option>
+                  <option value="lead">Lead</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
             </div>
             <div className="form-actions">
               <button type="button" className="btn btn-secondary" onClick={() => setShowEdit(false)}>Cancel</button>

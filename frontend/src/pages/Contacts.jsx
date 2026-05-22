@@ -22,7 +22,15 @@ const SEGMENTS = [
   { name: 'Inactive',           filter: 'inactive', dot: T.textFaint },
 ];
 
-const BLANK = { name: '', email: '', phone: '', company: '', status: 'active' };
+const BLANK = { first_name: '', last_name: '', preferred_name: '', date_of_birth: '', phone: '', email: '', preferred_channel: 'email', status: 'active' };
+
+const CHANNELS = ['email', 'sms', 'whatsapp', 'voice'];
+
+function displayName(c) {
+  if (c.preferred_name) return c.preferred_name;
+  const full = [c.first_name, c.last_name].filter(Boolean).join(' ');
+  return full || c.name || '—';
+}
 
 const STATUS_STYLE = {
   active:   { bg: T.accentSoft, fg: T.success },
@@ -57,7 +65,12 @@ export default function Contacts() {
   function openAdd() { setEditing(null); setForm(BLANK); setShowModal(true); }
   function openEdit(c) {
     setEditing(c);
-    setForm({ name: c.name, email: c.email || '', phone: c.phone || '', company: c.company || '', status: c.status });
+    setForm({
+      first_name: c.first_name || '', last_name: c.last_name || '',
+      preferred_name: c.preferred_name || '', date_of_birth: c.date_of_birth || '',
+      phone: c.phone || '', email: c.email || '',
+      preferred_channel: c.preferred_channel || 'email', status: c.status,
+    });
     setShowModal(true);
   }
 
@@ -183,11 +196,11 @@ export default function Contacts() {
               <thead>
                 <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt }}>
                   <th style={thStyle}>Patient</th>
+                  <th style={thStyle}>Date of Birth</th>
                   <th style={thStyle}>Email</th>
-                  <th style={thStyle}>Phone</th>
-                  <th style={thStyle}>Company</th>
+                  <th style={thStyle}>Mobile</th>
+                  <th style={thStyle}>Channel</th>
                   <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Added</th>
                   <th style={{ ...thStyle, width: 70 }}></th>
                 </tr>
               </thead>
@@ -198,23 +211,33 @@ export default function Contacts() {
                     <tr key={c.id} style={{ borderBottom: `1px solid ${T.border}`, background: i % 2 ? T.surface : T.surfaceAlt }}>
                       <td style={{ padding: '10px 14px' }}>
                         <Link to={`/contacts/${c.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 9 }}>
-                          <Avatar name={c.name} size={28}/>
+                          <Avatar name={displayName(c)} size={28}/>
                           <div>
-                            <div style={{ fontWeight: 500, color: T.text }}>{c.name}</div>
-                            {c.company && <div style={{ fontSize: 11, color: T.textFaint }}>{c.company}</div>}
+                            <div style={{ fontWeight: 500, color: T.text }}>
+                              {[c.first_name, c.last_name].filter(Boolean).join(' ') || c.name}
+                            </div>
+                            {c.preferred_name && (
+                              <div style={{ fontSize: 11, color: T.textFaint }}>"{c.preferred_name}"</div>
+                            )}
                           </div>
                         </Link>
                       </td>
+                      <td style={{ padding: '10px 14px', color: T.textDim, fontFamily: T.mono, fontSize: 11.5 }}>
+                        {c.date_of_birth ? new Date(c.date_of_birth + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                      </td>
                       <td style={{ padding: '10px 14px', color: T.textDim, fontSize: 12 }}>{c.email || '—'}</td>
                       <td style={{ padding: '10px 14px', color: T.textDim, fontFamily: T.mono, fontSize: 11.5 }}>{c.phone || '—'}</td>
-                      <td style={{ padding: '10px 14px', color: T.textDim }}>{c.company || '—'}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        {c.preferred_channel && (
+                          <span style={{ fontSize: 10.5, padding: '2px 7px', borderRadius: 4, background: T.surfaceAlt, border: `1px solid ${T.border}`, color: T.textDim, fontWeight: 500 }}>
+                            {c.preferred_channel}
+                          </span>
+                        )}
+                      </td>
                       <td style={{ padding: '10px 14px' }}>
                         <span style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 4, background: ss.bg, color: ss.fg, fontWeight: 600 }}>
                           {c.status}
                         </span>
-                      </td>
-                      <td style={{ padding: '10px 14px', color: T.textFaint, fontFamily: T.mono, fontSize: 11 }}>
-                        {new Date(c.created_at).toLocaleDateString()}
                       </td>
                       <td style={{ padding: '10px 14px' }}>
                         <div style={{ display: 'flex', gap: 4 }}>
@@ -251,31 +274,49 @@ export default function Contacts() {
           <form onSubmit={handleSubmit}>
             <div className="form-row">
               <div className="form-group">
-                <label>Name *</label>
-                <input required value={form.name} onChange={field('name')} placeholder="Full name" />
+                <label>First Name *</label>
+                <input required value={form.first_name} onChange={field('first_name')} placeholder="First name" />
               </div>
               <div className="form-group">
-                <label>Company / Clinic</label>
-                <input value={form.company} onChange={field('company')} placeholder="Optional" />
+                <label>Last Name</label>
+                <input value={form.last_name} onChange={field('last_name')} placeholder="Last name" />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Email</label>
+                <label>Preferred Name</label>
+                <input value={form.preferred_name} onChange={field('preferred_name')} placeholder="e.g. Nickname" />
+              </div>
+              <div className="form-group">
+                <label>Date of Birth</label>
+                <input type="date" value={form.date_of_birth} onChange={field('date_of_birth')} />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Email Address</label>
                 <input type="email" value={form.email} onChange={field('email')} placeholder="email@example.com" />
               </div>
               <div className="form-group">
-                <label>Phone</label>
+                <label>Mobile Phone</label>
                 <input value={form.phone} onChange={field('phone')} placeholder="+1 (555) 000-0000" />
               </div>
             </div>
-            <div className="form-group">
-              <label>Status</label>
-              <select value={form.status} onChange={field('status')}>
-                <option value="active">Active</option>
-                <option value="lead">Lead</option>
-                <option value="inactive">Inactive</option>
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Preferred Channel</label>
+                <select value={form.preferred_channel} onChange={field('preferred_channel')}>
+                  {CHANNELS.map(ch => <option key={ch} value={ch}>{ch.charAt(0).toUpperCase() + ch.slice(1)}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Status</label>
+                <select value={form.status} onChange={field('status')}>
+                  <option value="active">Active</option>
+                  <option value="lead">Lead</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
             </div>
             <div className="form-actions">
               <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>

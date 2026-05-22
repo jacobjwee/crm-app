@@ -209,8 +209,11 @@ export default function Inbox() {
                           <ChannelChip channel={t.channel} size={11}/>
                           <span style={{ fontSize: 10.5, color: T.textFaint, fontFamily: T.mono }}>{t.message_count} msg{t.message_count !== 1 ? 's' : ''}</span>
                         </div>
-                        <div style={{ fontSize: 12, color: T.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {t.direction === 'outbound' ? '→ ' : ''}{t.preview}
+                        <div style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: t.direction === 'inbound' ? T.text : T.textDim, fontWeight: t.direction === 'inbound' ? 500 : 400 }}>
+                          <span style={{ marginRight: 3, color: t.direction === 'inbound' ? T.accent : T.textFaint }}>
+                            {t.direction === 'inbound' ? '←' : '→'}
+                          </span>
+                          {t.preview}
                         </div>
                       </div>
                     </div>

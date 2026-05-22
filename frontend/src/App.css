@@ -789,6 +789,69 @@ tbody tr:hover td {
 }
 .trigger-chip button:hover { color: #6c5ce7; }
 
+.trigger-type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.trigger-type-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e0d9f5;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.trigger-type-option:hover { border-color: #a29bfe; background: #faf9ff; }
+
+.trigger-type-option.selected {
+  border-color: #6c5ce7;
+  background: #f5f0ff;
+}
+
+.trigger-type-radio {
+  font-size: 16px;
+  color: #b0bec5;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.trigger-type-option.selected .trigger-type-radio { color: #6c5ce7; }
+
+.trigger-type-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+.trigger-type-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trigger-type-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a2332;
+}
+
+.trigger-type-desc {
+  font-size: 12px;
+  color: #95a5b3;
+}
+
+.trigger-sub-config {
+  margin-top: 14px;
+  padding: 14px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0d9f5;
+}
+
 .trigger-audience {
   display: flex;
   align-items: center;

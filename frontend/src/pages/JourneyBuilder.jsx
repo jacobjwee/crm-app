@@ -20,11 +20,20 @@ const STEP_TYPES = {
   update_status: { label: 'Update Status', icon: '🏷',  color: '#8e44ad', bg: '#f5eafb' },
 };
 
-const TRIGGER_OPTIONS = [
-  { value: 'contact_created',        label: 'Contact is created' },
-  { value: 'status_changed:active',  label: 'Status → Active' },
-  { value: 'status_changed:lead',    label: 'Status → Lead' },
-  { value: 'status_changed:inactive',label: 'Status → Inactive' },
+const TRIGGER_TYPES = [
+  { value: 'contact_created', label: 'Contact is created',        icon: '👤', desc: 'Fires when a new contact is added to the CRM' },
+  { value: 'scheduled',       label: 'Scheduled at a certain time', icon: '🗓', desc: 'Run once or on a recurring schedule' },
+  { value: 'event',           label: 'After a certain event',     icon: '⚡', desc: 'Fires when a contact matches a specific condition' },
+];
+
+const EVENT_OPTIONS = [
+  { value: 'status_changed', label: 'Contact status changes to…' },
+];
+
+const STATUS_VALUES = [
+  { value: 'active',   label: 'Active' },
+  { value: 'lead',     label: 'Lead' },
+  { value: 'inactive', label: 'Inactive' },
 ];
 
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -161,61 +170,128 @@ function AddStepButton({ onAdd }) {
 
 // ─── Trigger block ──────────────────────────────────────────────────────────
 function TriggerBlock({ config, onChange }) {
-  const events = config.events || [];
-
-  function addTrigger(val) {
-    if (!events.includes(val)) onChange({ ...config, events: [...events, val] });
-  }
-  function removeTrigger(val) {
-    onChange({ ...config, events: events.filter(e => e !== val) });
-  }
-
-  const unused = TRIGGER_OPTIONS.filter(o => !events.includes(o.value));
+  const triggerType = config.trigger_type || 'contact_created';
+  function set(key, val) { onChange({ ...config, [key]: val }); }
 
   return (
-    <div className="journey-step-card trigger-card">
+    <div className="trigger-card">
       <div className="step-card-header">
-        <span className="step-badge" style={{ background: '#6c5ce7' }}>⚡ Enrollment Triggers</span>
+        <span className="step-badge" style={{ background: '#6c5ce7' }}>⚡ Start this journey when…</span>
       </div>
-      <div className="trigger-chips">
-        {events.length === 0 && (
-          <span style={{ fontSize: 13, color: '#b0bec5' }}>No triggers yet — add one below</span>
-        )}
-        {events.map(ev => {
-          const opt = TRIGGER_OPTIONS.find(o => o.value === ev);
-          return (
-            <div key={ev} className="trigger-chip">
-              {opt?.label ?? ev}
-              <button onClick={() => removeTrigger(ev)}>×</button>
-            </div>
-          );
-        })}
-      </div>
-      {unused.length > 0 && (
-        <div style={{ marginTop: 10 }}>
-          <select
-            className="step-inline-select"
-            value=""
-            onChange={e => { if (e.target.value) addTrigger(e.target.value); }}
+
+      {/* Three trigger type options */}
+      <div className="trigger-type-list">
+        {TRIGGER_TYPES.map(t => (
+          <label
+            key={t.value}
+            className={`trigger-type-option${triggerType === t.value ? ' selected' : ''}`}
+            onClick={() => set('trigger_type', t.value)}
           >
-            <option value="">+ Add trigger…</option>
-            {unused.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+            <span className="trigger-type-radio">
+              {triggerType === t.value ? '●' : '○'}
+            </span>
+            <span className="trigger-type-icon">{t.icon}</span>
+            <div className="trigger-type-text">
+              <span className="trigger-type-label">{t.label}</span>
+              <span className="trigger-type-desc">{t.desc}</span>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      {/* Sub-config for scheduled */}
+      {triggerType === 'scheduled' && (
+        <div className="trigger-sub-config">
+          <div className="step-fields" style={{ flexWrap: 'wrap', gap: 10 }}>
+            <select
+              className="step-inline-select"
+              value={config.schedule_type || 'once'}
+              onChange={e => set('schedule_type', e.target.value)}
+            >
+              <option value="once">Once</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+
+            {(!config.schedule_type || config.schedule_type === 'once') && (
+              <input
+                type="datetime-local"
+                className="step-inline-input"
+                value={config.schedule_at || ''}
+                onChange={e => set('schedule_at', e.target.value)}
+              />
+            )}
+            {config.schedule_type === 'daily' && (
+              <>
+                <span style={{ fontSize: 13, color: '#7f8c9a' }}>at</span>
+                <input type="time" className="step-inline-input" value={config.schedule_at || ''} onChange={e => set('schedule_at', e.target.value)} />
+              </>
+            )}
+            {config.schedule_type === 'weekly' && (
+              <>
+                <span style={{ fontSize: 13, color: '#7f8c9a' }}>every</span>
+                <select className="step-inline-select" value={config.schedule_day ?? 1} onChange={e => set('schedule_day', parseInt(e.target.value))}>
+                  {DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                </select>
+                <span style={{ fontSize: 13, color: '#7f8c9a' }}>at</span>
+                <input type="time" className="step-inline-input" value={config.schedule_at || ''} onChange={e => set('schedule_at', e.target.value)} />
+              </>
+            )}
+            {config.schedule_type === 'monthly' && (
+              <>
+                <span style={{ fontSize: 13, color: '#7f8c9a' }}>on day</span>
+                <select className="step-inline-select" value={config.schedule_day ?? 1} onChange={e => set('schedule_day', parseInt(e.target.value))}>
+                  {Array.from({ length: 28 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <span style={{ fontSize: 13, color: '#7f8c9a' }}>at</span>
+                <input type="time" className="step-inline-input" value={config.schedule_at || ''} onChange={e => set('schedule_at', e.target.value)} />
+              </>
+            )}
+          </div>
+
+          <div className="step-fields" style={{ marginTop: 10 }}>
+            <span style={{ fontSize: 13, color: '#7f8c9a' }}>Send to</span>
+            <select className="step-inline-select" value={config.audience_filter || 'all'} onChange={e => set('audience_filter', e.target.value)}>
+              <option value="all">All contacts</option>
+              <option value="active">Active contacts</option>
+              <option value="lead">Leads only</option>
+              <option value="inactive">Inactive contacts</option>
+            </select>
+          </div>
         </div>
       )}
-      <div className="trigger-audience" style={{ marginTop: 12 }}>
-        <span style={{ fontSize: 13, color: '#7f8c9a' }}>Audience:</span>
-        <select
-          className="step-inline-select"
-          value={config.audience_filter || 'all'}
-          onChange={e => onChange({ ...config, audience_filter: e.target.value })}
-        >
-          <option value="all">All contacts</option>
-          <option value="active">Active only</option>
-          <option value="lead">Leads only</option>
-          <option value="inactive">Inactive only</option>
-        </select>
-      </div>
+
+      {/* Sub-config for event */}
+      {triggerType === 'event' && (
+        <div className="trigger-sub-config">
+          <div className="step-fields">
+            <select className="step-inline-select" value={config.event_type || 'status_changed'} onChange={e => set('event_type', e.target.value)}>
+              {EVENT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {(!config.event_type || config.event_type === 'status_changed') && (
+              <select className="step-inline-select" value={config.event_value || 'lead'} onChange={e => set('event_value', e.target.value)}>
+                {STATUS_VALUES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Audience for contact_created */}
+      {triggerType === 'contact_created' && (
+        <div className="trigger-sub-config">
+          <div className="step-fields">
+            <span style={{ fontSize: 13, color: '#7f8c9a' }}>Enroll</span>
+            <select className="step-inline-select" value={config.audience_filter || 'all'} onChange={e => set('audience_filter', e.target.value)}>
+              <option value="all">all new contacts</option>
+              <option value="active">active contacts only</option>
+              <option value="lead">leads only</option>
+              <option value="inactive">inactive contacts only</option>
+            </select>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -229,7 +305,7 @@ export default function JourneyBuilder() {
   const [name, setName] = useState('Untitled Journey');
   const [status, setStatus] = useState('draft');
   const [steps, setSteps] = useState([
-    { id: uid(), type: 'trigger', config: { events: [], audience_filter: 'all' } },
+    { id: uid(), type: 'trigger', config: { trigger_type: 'contact_created', audience_filter: 'all' } },
   ]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!isNew);
@@ -249,7 +325,7 @@ export default function JourneyBuilder() {
             { id: uid(), type: 'trigger', config: { events: [], audience_filter: 'all' } },
           ];
           if (!loaded.find(s => s.type === 'trigger')) {
-            loaded.unshift({ id: uid(), type: 'trigger', config: { events: [], audience_filter: 'all' } });
+            loaded.unshift({ id: uid(), type: 'trigger', config: { trigger_type: 'contact_created', audience_filter: 'all' } });
           }
           setSteps(loaded);
         })

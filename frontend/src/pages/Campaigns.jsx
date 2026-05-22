@@ -26,8 +26,21 @@ function triggerSummary(stepsJson) {
   try {
     const steps = typeof stepsJson === 'string' ? JSON.parse(stepsJson) : stepsJson;
     const trig = steps.find(s => s.type === 'trigger');
-    const events = trig?.config?.events || [];
-    if (events.length === 0) return 'No triggers';
+    const cfg = trig?.config || {};
+
+    if (cfg.trigger_type === 'contact_created') return 'Contact is created';
+    if (cfg.trigger_type === 'scheduled') {
+      const t = cfg.schedule_type || 'once';
+      return t === 'once' ? 'Scheduled (once)' : `Scheduled (${t})`;
+    }
+    if (cfg.trigger_type === 'event') {
+      const val = cfg.event_value ? ` → ${cfg.event_value}` : '';
+      return `Status changed${val}`;
+    }
+
+    // Legacy format
+    const events = cfg.events || [];
+    if (events.length === 0) return 'No trigger set';
     const labels = { contact_created: 'Contact created', 'status_changed:active': 'Status → Active', 'status_changed:lead': 'Status → Lead', 'status_changed:inactive': 'Status → Inactive' };
     return events.map(e => labels[e] || e).join(', ');
   } catch { return '—'; }

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { enrollContact } = require('../lib/journeyRunner');
+const { enrollContact, computeNextScheduled } = require('../lib/journeyRunner');
 
 router.get('/', (req, res) => {
   const journeys = db.prepare(`
@@ -31,9 +31,14 @@ router.post('/', (req, res) => {
   const { name, steps, status } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'name is required' });
 
+  const stepsArr = steps || [];
+  const trig = stepsArr.find(s => s.type === 'trigger');
+  const next_run_at = trig?.config?.trigger_type === 'scheduled'
+    ? computeNextScheduled(trig.config) : null;
+
   const result = db.prepare(
-    'INSERT INTO journeys (name, steps, status) VALUES (?, ?, ?)'
-  ).run(name.trim(), JSON.stringify(steps || []), status || 'draft');
+    'INSERT INTO journeys (name, steps, status, next_run_at) VALUES (?, ?, ?, ?)'
+  ).run(name.trim(), JSON.stringify(stepsArr), status || 'draft', next_run_at);
 
   const j = db.prepare('SELECT * FROM journeys WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ ...j, steps: JSON.parse(j.steps) });

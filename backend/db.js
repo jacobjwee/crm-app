@@ -102,4 +102,7 @@ db.exec(`
   );
 `);
 
+// Add next_run_at to journeys if not present (safe migration)
+try { db.exec('ALTER TABLE journeys ADD COLUMN next_run_at TEXT'); } catch (_) {}
+
 module.exports = db;

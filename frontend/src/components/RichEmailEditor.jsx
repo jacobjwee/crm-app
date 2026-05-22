@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
@@ -248,10 +248,21 @@ function HeadingEditor({ props, onChange }) {
 }
 
 function TextBlockEditor({ props, onChange }) {
+  const textRef = useRef(null);
+  function insertLink() {
+    const url = `${window.location.origin}/book`;
+    const el = textRef.current;
+    const content = props.content || '';
+    if (!el) { onChange({ ...props, content: content + url }); return; }
+    const start = el.selectionStart;
+    onChange({ ...props, content: content.slice(0, start) + url + content.slice(start) });
+    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + url.length; el.focus(); });
+  }
   return (
     <div className="block-editor">
       <FormatBar props={props} onChange={onChange} show={{ align: true, bold: true, italic: true, underline: true, size: true, font: true, color: true, bg: true }} />
       <textarea
+        ref={textRef}
         value={props.content || ''} placeholder="Paragraph text…"
         onChange={e => onChange({ ...props, content: e.target.value })}
         className="block-content-textarea" rows={3}
@@ -266,11 +277,18 @@ function TextBlockEditor({ props, onChange }) {
           background: props.bg && props.bg !== '#ffffff' ? props.bg : '#fff',
         }}
       />
+      <button type="button" className="insert-link-btn" style={{ marginTop: 4 }} onClick={insertLink}>
+        📅 Insert booking link
+      </button>
     </div>
   );
 }
 
 function ButtonBlockEditor({ props, onChange }) {
+  function useBookingLink() {
+    const url = `${window.location.origin}/book`;
+    onChange({ ...props, url, label: props.label || 'Book an Appointment' });
+  }
   return (
     <div className="block-editor">
       <FormatBar props={props} onChange={onChange} show={{ align: true, size: true, font: true, bold: true }} />
@@ -289,11 +307,16 @@ function ButtonBlockEditor({ props, onChange }) {
           <span style={{ borderBottom: `3px solid ${props.textColor || '#ffffff'}`, filter: 'invert(0)' }}>A</span>
         </label>
       </div>
-      <input
-        value={props.url || ''} placeholder="Link URL (https://…)"
-        onChange={e => onChange({ ...props, url: e.target.value })}
-        className="block-content-input" style={{ marginTop: 6 }}
-      />
+      <div style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'center' }}>
+        <input
+          value={props.url || ''} placeholder="Link URL (https://…)"
+          onChange={e => onChange({ ...props, url: e.target.value })}
+          className="block-content-input" style={{ flex: 1, marginTop: 0 }}
+        />
+        <button type="button" className="insert-link-btn" onClick={useBookingLink}>
+          📅 Use booking link
+        </button>
+      </div>
       {/* Live preview */}
       <div style={{ textAlign: props.align || 'center', marginTop: 10 }}>
         <span style={{
@@ -437,6 +460,18 @@ export default function RichEmailEditor({ config, onChange }) {
   );
   const [html, setHtml] = useState(config.body || '');
   const [showPreview, setShowPreview] = useState(false);
+  const htmlTextareaRef = useRef(null);
+
+  function insertHtmlBookingLink() {
+    const url = `${window.location.origin}/book`;
+    const snippet = `<a href="${url}">Book an Appointment</a>`;
+    const el = htmlTextareaRef.current;
+    if (!el) { handleHtmlChange(html + snippet); return; }
+    const start = el.selectionStart;
+    const newVal = html.slice(0, start) + snippet + html.slice(start);
+    handleHtmlChange(newVal);
+    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + snippet.length; el.focus(); });
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -525,13 +560,21 @@ export default function RichEmailEditor({ config, onChange }) {
 
       {/* HTML mode */}
       {mode === 'html' && (
-        <textarea
-          className="html-editor"
-          value={html}
-          onChange={e => handleHtmlChange(e.target.value)}
-          placeholder="<p>Write your email HTML here…</p>"
-          spellCheck={false}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '6px 10px', borderBottom: '1px solid #f0f2f5', display: 'flex', gap: 6 }}>
+            <button type="button" className="insert-link-btn" onClick={insertHtmlBookingLink}>
+              📅 Insert booking link
+            </button>
+          </div>
+          <textarea
+            ref={htmlTextareaRef}
+            className="html-editor"
+            value={html}
+            onChange={e => handleHtmlChange(e.target.value)}
+            placeholder="<p>Write your email HTML here…</p>"
+            spellCheck={false}
+          />
+        </div>
       )}
 
       {/* Preview */}

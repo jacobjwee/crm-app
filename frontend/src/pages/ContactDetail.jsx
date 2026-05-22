@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchContact, updateContact, deleteContact, fetchNotes, createNote, deleteNote, fetchMessages, sendMessage, sendBookingLink } from '../api';
+import { fetchContact, updateContact, deleteContact, fetchNotes, createNote, deleteNote, fetchMessages, sendMessage } from '../api';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from '../lib/toast';
@@ -29,9 +29,7 @@ export default function ContactDetail() {
   const [msgSubject, setMsgSubject] = useState('');
   const [msgBody, setMsgBody] = useState('');
   const [sending, setSending] = useState(false);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [bookingChannel, setBookingChannel] = useState('email');
-  const [sendingBooking, setSendingBooking] = useState(false);
+  const msgBodyRef = useRef(null);
 
   useEffect(() => {
     Promise.all([fetchContact(id), fetchNotes(id), fetchMessages(id)])
@@ -96,19 +94,14 @@ export default function ContactDetail() {
     }
   }
 
-  async function handleSendBookingLink() {
-    setSendingBooking(true);
-    try {
-      await sendBookingLink(id, bookingChannel);
-      toast.success(`Booking link sent via ${bookingChannel}`);
-      setShowBookingModal(false);
-      const m = await fetchMessages(id);
-      setMessages(m);
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setSendingBooking(false);
-    }
+  function insertBookingLink() {
+    const url = `${window.location.origin}/book`;
+    const el = msgBodyRef.current;
+    if (!el) { setMsgBody(b => b + url); return; }
+    const start = el.selectionStart;
+    const newVal = msgBody.slice(0, start) + url + msgBody.slice(start);
+    setMsgBody(newVal);
+    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + url.length; el.focus(); });
   }
 
   async function handleSendMessage(e) {
@@ -223,22 +216,13 @@ export default function ContactDetail() {
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <h2 style={{ fontSize: 15, fontWeight: 600 }}>
             Messages <span style={{ color: '#95a5b3', fontWeight: 400 }}>({messages.length})</span>
           </h2>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => setShowBookingModal(true)}
-              title="Send patient a link to book an appointment"
-            >
-              📅 Send Booking Link
-            </button>
-            <div className="channel-tabs">
-              <button className={`channel-tab${msgChannel === 'email' ? ' active' : ''}`} onClick={() => setMsgChannel('email')}>✉ Email</button>
-              <button className={`channel-tab${msgChannel === 'sms'   ? ' active' : ''}`} onClick={() => setMsgChannel('sms')}>💬 SMS</button>
-            </div>
+          <div className="channel-tabs">
+            <button className={`channel-tab${msgChannel === 'email' ? ' active' : ''}`} onClick={() => setMsgChannel('email')}>✉ Email</button>
+            <button className={`channel-tab${msgChannel === 'sms'   ? ' active' : ''}`} onClick={() => setMsgChannel('sms')}>💬 SMS</button>
           </div>
         </div>
 
@@ -274,16 +258,20 @@ export default function ContactDetail() {
             />
           )}
           <div style={{ display: 'flex', gap: 10 }}>
-            <textarea
-              value={msgBody}
-              onChange={e => setMsgBody(e.target.value)}
-              placeholder={msgChannel === 'email' ? 'Write your email…' : 'Write your SMS (160 chars recommended)…'}
-              className="message-body-input"
-              maxLength={msgChannel === 'sms' ? 1600 : undefined}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && e.metaKey) handleSendMessage(e);
-              }}
-            />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <textarea
+                ref={msgBodyRef}
+                value={msgBody}
+                onChange={e => setMsgBody(e.target.value)}
+                placeholder={msgChannel === 'email' ? 'Write your email…' : 'Write your SMS (160 chars recommended)…'}
+                className="message-body-input"
+                maxLength={msgChannel === 'sms' ? 1600 : undefined}
+                onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) handleSendMessage(e); }}
+              />
+              <button type="button" className="insert-link-btn" onClick={insertBookingLink}>
+                📅 Insert booking link
+              </button>
+            </div>
             <button type="submit" className="btn btn-primary" disabled={sending || !msgBody.trim()} style={{ alignSelf: 'flex-end' }}>
               {sending ? 'Sending…' : `Send ${msgChannel === 'email' ? 'Email' : 'SMS'}`}
             </button>
@@ -343,58 +331,6 @@ export default function ContactDetail() {
         />
       )}
 
-      {showBookingModal && (
-        <div className="modal-overlay" onClick={() => setShowBookingModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
-            <div className="modal-header">
-              <h3>Send Booking Link</h3>
-              <button className="modal-close" onClick={() => setShowBookingModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <p style={{ fontSize: 14, color: '#5a6a7a', marginBottom: 16 }}>
-                Send <strong>{contact.name}</strong> a link so they can choose a time and book an appointment.
-              </p>
-              <div className="form-group">
-                <label>Booking page link</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    className="form-input"
-                    value={`${window.location.origin}/book`}
-                    readOnly
-                    style={{ flex: 1, fontSize: 13, color: '#4facfe' }}
-                  />
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/book`); toast.success('Link copied'); }}
-                  >Copy</button>
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Send via</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className={`btn btn-sm ${bookingChannel === 'email' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setBookingChannel('email')}>✉ Email</button>
-                  <button className={`btn btn-sm ${bookingChannel === 'sms'   ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setBookingChannel('sms')}>💬 SMS</button>
-                </div>
-                <div style={{ fontSize: 12, color: '#95a5b3', marginTop: 6 }}>
-                  {bookingChannel === 'email'
-                    ? `Will send to: ${contact.email || '(no email on file)'}`
-                    : `Will send to: ${contact.phone || '(no phone on file)'}`}
-                </div>
-              </div>
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowBookingModal(false)}>Cancel</button>
-              <button
-                className="btn btn-primary"
-                onClick={handleSendBookingLink}
-                disabled={sendingBooking || (bookingChannel === 'email' ? !contact.email : !contact.phone)}
-              >
-                {sendingBooking ? 'Sending…' : 'Send Link'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

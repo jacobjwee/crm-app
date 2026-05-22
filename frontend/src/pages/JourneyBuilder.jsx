@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -75,18 +75,33 @@ function SendEmailEditor({ config, onChange }) {
 }
 
 function SendSmsEditor({ config, onChange }) {
+  const textRef = useRef(null);
+  function insertLink() {
+    const url = `${window.location.origin}/book`;
+    const el = textRef.current;
+    const body = config.body ?? '';
+    if (!el) { onChange({ ...config, body: body + url }); return; }
+    const start = el.selectionStart;
+    const newBody = body.slice(0, start) + url + body.slice(start);
+    onChange({ ...config, body: newBody });
+    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + url.length; el.focus(); });
+  }
   return (
     <div className="step-fields" style={{ flexDirection: 'column', gap: 4 }}>
       <textarea
+        ref={textRef}
         value={config.body ?? ''} placeholder="SMS message…"
         onChange={e => onChange({ ...config, body: e.target.value })}
         className="step-textarea"
         rows={2}
         maxLength={1600}
       />
-      {(config.body?.length ?? 0) > 0 && (
-        <div style={{ fontSize: 12, color: '#95a5b3' }}>{config.body.length} / 160</div>
-      )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button type="button" className="insert-link-btn" onClick={insertLink}>📅 Insert booking link</button>
+        {(config.body?.length ?? 0) > 0 && (
+          <span style={{ fontSize: 12, color: '#95a5b3' }}>{config.body.length} / 160</span>
+        )}
+      </div>
     </div>
   );
 }

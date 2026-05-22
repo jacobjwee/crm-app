@@ -58,6 +58,13 @@ async function runCampaign(campaign, specificContact = null) {
     db.prepare(
       'INSERT INTO campaign_runs (campaign_id, contact_id, status, error) VALUES (?, ?, ?, ?)'
     ).run(campaign.id, contact.id, status, error);
+
+    if (status !== 'skipped') {
+      db.prepare(
+        'INSERT INTO messages (contact_id, channel, direction, subject, body, status) VALUES (?, ?, ?, ?, ?, ?)'
+      ).run(contact.id, campaign.channel, 'outbound', campaign.subject || null, campaign.body, status);
+    }
+
     results.push({ contact_id: contact.id, contact_name: contact.name, status, error });
   }
 

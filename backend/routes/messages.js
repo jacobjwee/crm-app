@@ -20,6 +20,23 @@ function getTwilio() {
   return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
 
+router.get('/threads', (req, res) => {
+  const threads = db.prepare(`
+    SELECT
+      c.id AS contact_id, c.name, c.email, c.phone, c.status,
+      m.id AS message_id, m.channel, m.direction, m.subject, m.body AS preview,
+      m.status AS msg_status, m.created_at,
+      (SELECT COUNT(*) FROM messages WHERE contact_id = c.id) AS message_count
+    FROM contacts c
+    JOIN messages m ON m.contact_id = c.id
+    WHERE m.id = (
+      SELECT id FROM messages WHERE contact_id = c.id ORDER BY created_at DESC LIMIT 1
+    )
+    ORDER BY m.created_at DESC
+  `).all();
+  res.json(threads);
+});
+
 router.get('/contact/:contactId', (req, res) => {
   const messages = db.prepare(
     'SELECT * FROM messages WHERE contact_id = ? ORDER BY created_at ASC'

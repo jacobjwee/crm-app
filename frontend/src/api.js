@@ -24,6 +24,7 @@ export const createNote = (contactId, content) =>
   request('/notes', { method: 'POST', body: { contact_id: contactId, content } });
 export const deleteNote = (id) => request(`/notes/${id}`, { method: 'DELETE' });
 export const fetchMessages = (contactId) => request(`/messages/contact/${contactId}`);
+export const fetchInboxThreads = () => request('/messages/threads');
 export const fetchCampaigns = () => request('/campaigns');
 export const fetchCampaign = (id) => request(`/campaigns/${id}`);
 export const createCampaign = (data) => request('/campaigns', { method: 'POST', body: data });

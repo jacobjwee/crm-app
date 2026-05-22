@@ -7,6 +7,7 @@ import Campaigns from './pages/Campaigns';
 import JourneyBuilder from './pages/JourneyBuilder';
 import Schedule from './pages/Schedule';
 import BookingPage from './pages/BookingPage';
+import Inbox from './pages/Inbox';
 import Toaster from './components/Toaster';
 
 function MainLayout() {
@@ -17,6 +18,7 @@ function MainLayout() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/inbox" element={<Inbox />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/contacts/:id" element={<ContactDetail />} />

@@ -4,13 +4,23 @@ import { fetchContact, updateContact, deleteContact, fetchNotes, createNote, del
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from '../lib/toast';
+import { Avatar, ChannelChip, ChevronRightIcon, ChatIcon, CalendarIcon, MoreIcon, EditIcon, TrashIcon } from '../components/Icons';
 
-function avatarColor(name) {
-  const palette = ['#4facfe', '#43e97b', '#fa709a', '#a18cd1', '#f7971e', '#00c9ff'];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
-  return palette[Math.abs(h) % palette.length];
-}
+const T = {
+  surface: '#FFFFFF', surfaceAlt: '#FAF9F5', border: '#E7E4DC', borderStrong: '#D9D5CB',
+  text: '#0F1419', textDim: '#5C6470', textFaint: '#94A0AE',
+  accent: '#2E8C82', accentSoft: '#E5F1EF',
+  success: '#3E8C5A', warn: '#B6792B', danger: '#C3463A',
+  mono: "'Geist Mono', ui-monospace, monospace",
+};
+
+const STATUS_STYLE = {
+  active:   { bg: T.accentSoft, fg: T.success },
+  lead:     { bg: T.accentSoft, fg: T.accent },
+  inactive: { bg: '#F0EEE7',    fg: T.textFaint },
+};
+
+const TABS = ['Timeline', 'Messages', 'Notes', 'Appointments'];
 
 export default function ContactDetail() {
   const { id } = useParams();
@@ -29,6 +39,7 @@ export default function ContactDetail() {
   const [msgSubject, setMsgSubject] = useState('');
   const [msgBody, setMsgBody] = useState('');
   const [sending, setSending] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
   const msgBodyRef = useRef(null);
 
   useEffect(() => {
@@ -52,11 +63,8 @@ export default function ContactDetail() {
       setNotes(prev => [note, ...prev]);
       setNoteText('');
       toast.success('Note added');
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setSavingNote(false);
-    }
+    } catch (err) { toast.error(err.message); }
+    finally { setSavingNote(false); }
   }
 
   async function handleDeleteNote(noteId) {
@@ -64,9 +72,7 @@ export default function ContactDetail() {
       await deleteNote(noteId);
       setNotes(prev => prev.filter(n => n.id !== noteId));
       toast.success('Note deleted');
-    } catch (err) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err.message); }
   }
 
   async function handleEditSubmit(e) {
@@ -76,22 +82,15 @@ export default function ContactDetail() {
       const updated = await updateContact(id, form);
       setContact(updated);
       setShowEdit(false);
-      toast.success('Contact updated');
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setSaving(false);
-    }
+      toast.success('Patient updated');
+    } catch (err) { toast.error(err.message); }
+    finally { setSaving(false); }
   }
 
   async function handleDeleteConfirm() {
     setShowDeleteConfirm(false);
-    try {
-      await deleteContact(id);
-      navigate('/contacts');
-    } catch (err) {
-      toast.error(err.message);
-    }
+    try { await deleteContact(id); navigate('/contacts'); }
+    catch (err) { toast.error(err.message); }
   }
 
   function insertBookingLink() {
@@ -114,176 +113,172 @@ export default function ContactDetail() {
       setMsgBody('');
       setMsgSubject('');
       toast.success(`${msgChannel === 'email' ? 'Email' : 'SMS'} sent`);
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setSending(false);
-    }
+    } catch (err) { toast.error(err.message); }
+    finally { setSending(false); }
   }
 
-  function field(key) {
-    return e => setForm(f => ({ ...f, [key]: e.target.value }));
-  }
+  function field(key) { return e => setForm(f => ({ ...f, [key]: e.target.value })); }
 
   if (loading) return <div className="loading">Loading…</div>;
-  if (!contact) return <div className="loading">Contact not found.</div>;
+  if (!contact) return <div className="loading">Patient not found.</div>;
+
+  const ss = STATUS_STYLE[contact.status] || STATUS_STYLE.inactive;
 
   return (
-    <div>
-      <Link to="/contacts" className="back-link">← Back to Contacts</Link>
+    <div style={{ fontFamily: "'Geist', system-ui, sans-serif", color: T.text }}>
+      {/* Breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.textDim, marginBottom: 0 }}>
+        <Link to="/contacts" style={{ color: T.textDim, textDecoration: 'none', cursor: 'pointer' }}>Patients</Link>
+        <ChevronRightIcon size={11} stroke={T.textFaint}/>
+        <span style={{ color: T.text, fontWeight: 500 }}>{contact.name}</span>
+        <span style={{ marginLeft: 'auto', fontFamily: T.mono, fontSize: 11, color: T.textFaint }}>
+          ID #{contact.id}
+        </span>
+      </div>
 
-      <div className="contact-detail-header">
-        <div className="contact-detail-avatar" style={{ background: avatarColor(contact.name) }}>
-          {contact.name[0].toUpperCase()}
-        </div>
-        <div className="contact-detail-info">
-          <h1>{contact.name}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-            <span style={{ fontSize: 14, color: '#7f8c9a' }}>{contact.company || 'No company'}</span>
-            <span className={`badge badge-${contact.status}`}>{contact.status}</span>
+      {/* Profile header */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '24px 28px', margin: '14px 0 0' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
+          <Avatar name={contact.name} size={72}/>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>{contact.name}</h1>
+              <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 4, background: ss.bg, color: ss.fg, fontWeight: 600 }}>
+                {contact.status}
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, fontSize: 12.5, color: T.textDim }}>
+              {contact.email && <div><span style={{ color: T.textFaint }}>Email </span>{contact.email}</div>}
+              {contact.phone && <div><span style={{ color: T.textFaint }}>Phone </span>{contact.phone}</div>}
+              {contact.company && <div><span style={{ color: T.textFaint }}>Company </span>{contact.company}</div>}
+              <div><span style={{ color: T.textFaint }}>Since </span>{new Date(contact.created_at).toLocaleDateString()}</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => { setActiveTab(1); }} style={primaryBtn}>
+              <ChatIcon size={13}/> Message
+            </button>
+            <button onClick={() => navigate('/schedule')} style={secondaryBtn}>
+              <CalendarIcon size={13}/> Book appt
+            </button>
+            <button onClick={() => setShowEdit(true)} style={iconBtn}><EditIcon size={14}/></button>
+            <button onClick={() => setShowDeleteConfirm(true)} style={{ ...iconBtn, color: T.danger }}><TrashIcon size={14}/></button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-secondary" onClick={() => setShowEdit(true)}>Edit</button>
-          <button className="btn btn-danger" onClick={() => setShowDeleteConfirm(true)}>Delete</button>
+
+        {/* Mini KPIs */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          {[
+            ['Notes', notes.length, null],
+            ['Messages', messages.length, null],
+            ['Status', contact.status, contact.status === 'active' ? T.success : T.textDim],
+          ].map(([l, v, c], i) => (
+            <div key={i} style={{ flex: 1, background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px' }}>
+              <div style={{ fontSize: 10, color: T.textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>{l}</div>
+              <div style={{ fontSize: 18, fontWeight: 600, color: c || T.text, fontFamily: T.mono, letterSpacing: '-0.01em' }}>{v}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="grid-2">
-        <div className="card">
-          <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 20 }}>Contact Info</h2>
-          <div className="info-list">
-            <div className="info-item">
-              <div className="label">Email</div>
-              <div className="value">{contact.email || '—'}</div>
+      {/* Tabs */}
+      <div style={{ background: T.surface, borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}`, padding: '0 28px', display: 'flex', gap: 20 }}>
+        {TABS.map((tab, i) => (
+          <button key={i} onClick={() => setActiveTab(i)} style={{
+            padding: '11px 0', fontSize: 13, fontFamily: 'inherit',
+            color: i === activeTab ? T.text : T.textDim,
+            fontWeight: i === activeTab ? 600 : 500, cursor: 'pointer',
+            background: 'none', border: 'none',
+            borderBottom: i === activeTab ? `2px solid ${T.accent}` : '2px solid transparent',
+            marginBottom: -1, transition: 'color 0.12s',
+          }}>
+            {tab}
+            {tab === 'Messages' && messages.length > 0 && (
+              <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 8, background: T.accentSoft, color: T.accent, fontFamily: T.mono }}>
+                {messages.length}
+              </span>
+            )}
+            {tab === 'Notes' && notes.length > 0 && (
+              <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 8, background: T.accentSoft, color: T.accent, fontFamily: T.mono }}>
+                {notes.length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 18, marginTop: 18 }}>
+        {/* Main column */}
+        <div>
+          {activeTab === 0 && <TimelineTab notes={notes} messages={messages} contact={contact} />}
+          {activeTab === 1 && (
+            <MessagesTab
+              messages={messages} msgChannel={msgChannel} setMsgChannel={setMsgChannel}
+              msgSubject={msgSubject} setMsgSubject={setMsgSubject}
+              msgBody={msgBody} setMsgBody={setMsgBody} msgBodyRef={msgBodyRef}
+              sending={sending} onSend={handleSendMessage} onInsertBooking={insertBookingLink}
+            />
+          )}
+          {activeTab === 2 && (
+            <NotesTab
+              notes={notes} noteText={noteText} setNoteText={setNoteText}
+              savingNote={savingNote} onAdd={handleAddNote} onDelete={handleDeleteNote}
+            />
+          )}
+          {activeTab === 3 && (
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 28, textAlign: 'center', color: T.textFaint }}>
+              <CalendarIcon size={32} style={{ margin: '0 auto 12px' }}/>
+              <p style={{ fontSize: 13, marginBottom: 16 }}>No appointments yet</p>
+              <button onClick={() => navigate('/schedule')} style={primaryBtn}>Book appointment</button>
             </div>
-            <div className="info-item">
-              <div className="label">Phone</div>
-              <div className="value">{contact.phone || '—'}</div>
-            </div>
-            <div className="info-item">
-              <div className="label">Company</div>
-              <div className="value">{contact.company || '—'}</div>
-            </div>
-            <div className="info-item">
-              <div className="label">Status</div>
-              <span className={`badge badge-${contact.status}`}>{contact.status}</span>
-            </div>
-            <div className="info-item">
-              <div className="label">Added</div>
-              <div className="value">{new Date(contact.created_at).toLocaleDateString()}</div>
-            </div>
-          </div>
+          )}
         </div>
 
-        <div className="card">
-          <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>
-            Notes <span style={{ color: '#95a5b3', fontWeight: 400 }}>({notes.length})</span>
-          </h2>
-          <form onSubmit={handleAddNote} className="note-form">
-            <textarea
-              value={noteText}
-              onChange={e => setNoteText(e.target.value)}
-              placeholder="Add a note… (Enter to submit)"
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleAddNote(e);
-                }
-              }}
-            />
-            <button type="submit" className="btn btn-primary" disabled={savingNote || !noteText.trim()}>
-              Add
-            </button>
-          </form>
-
-          {notes.length === 0 ? (
-            <div className="empty-state" style={{ paddingTop: 20, paddingBottom: 20 }}>
-              <p>No notes yet.</p>
-            </div>
-          ) : (
-            <div className="notes-list">
-              {notes.map(note => (
-                <div key={note.id} className="note-item">
-                  <p className="note-content">{note.content}</p>
-                  <p className="note-date">{new Date(note.created_at).toLocaleString()}</p>
-                  <button className="note-delete" onClick={() => handleDeleteNote(note.id)} title="Delete note">×</button>
+        {/* Right column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Contact info card */}
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, color: T.textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Contact info</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12.5 }}>
+              {[['Email', contact.email], ['Phone', contact.phone], ['Company', contact.company]].map(([l, v]) => (
+                <div key={l} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: `1px solid ${T.border}` }}>
+                  <span style={{ color: T.textDim }}>{l}</span>
+                  <span style={{ fontWeight: 500, color: v ? T.text : T.textFaint, textAlign: 'right', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {v || '—'}
+                  </span>
                 </div>
               ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 600 }}>
-            Messages <span style={{ color: '#95a5b3', fontWeight: 400 }}>({messages.length})</span>
-          </h2>
-          <div className="channel-tabs">
-            <button className={`channel-tab${msgChannel === 'email' ? ' active' : ''}`} onClick={() => setMsgChannel('email')}>✉ Email</button>
-            <button className={`channel-tab${msgChannel === 'sms'   ? ' active' : ''}`} onClick={() => setMsgChannel('sms')}>💬 SMS</button>
-          </div>
-        </div>
-
-        <div className="message-thread">
-          {messages.length === 0 ? (
-            <div className="empty-state" style={{ padding: '24px 0' }}>
-              <p>No messages yet. Send the first one below.</p>
-            </div>
-          ) : (
-            messages.map(msg => (
-              <div key={msg.id} className={`message-bubble ${msg.status === 'failed' ? 'failed' : ''}`}>
-                <div className="message-meta">
-                  <span className={`channel-pill ${msg.channel}`}>
-                    {msg.channel === 'email' ? '✉' : '💬'} {msg.channel}
-                  </span>
-                  {msg.subject && <span className="message-subject">{msg.subject}</span>}
-                  {msg.status === 'failed' && <span className="message-failed">failed</span>}
-                  <span className="message-time">{new Date(msg.created_at).toLocaleString()}</span>
-                </div>
-                <p className="message-body">{msg.body}</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: T.textDim }}>Status</span>
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: ss.bg, color: ss.fg, fontWeight: 600 }}>
+                  {contact.status}
+                </span>
               </div>
-            ))
-          )}
-        </div>
+            </div>
+          </div>
 
-        <form onSubmit={handleSendMessage} className="message-compose">
-          {msgChannel === 'email' && (
-            <input
-              value={msgSubject}
-              onChange={e => setMsgSubject(e.target.value)}
-              placeholder="Subject (optional)"
-              className="message-subject-input"
-            />
-          )}
-          <div style={{ display: 'flex', gap: 10 }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <textarea
-                ref={msgBodyRef}
-                value={msgBody}
-                onChange={e => setMsgBody(e.target.value)}
-                placeholder={msgChannel === 'email' ? 'Write your email…' : 'Write your SMS (160 chars recommended)…'}
-                className="message-body-input"
-                maxLength={msgChannel === 'sms' ? 1600 : undefined}
-                onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) handleSendMessage(e); }}
-              />
-              <button type="button" className="insert-link-btn" onClick={insertBookingLink}>
-                📅 Insert booking link
+          {/* Quick actions */}
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, color: T.textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Quick actions</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <button onClick={() => setActiveTab(1)} style={{ ...secondaryBtn, width: '100%', justifyContent: 'flex-start' }}>
+                <ChatIcon size={13}/> Send message
+              </button>
+              <button onClick={() => navigate('/schedule')} style={{ ...secondaryBtn, width: '100%', justifyContent: 'flex-start' }}>
+                <CalendarIcon size={13}/> Book appointment
+              </button>
+              <button onClick={() => setShowEdit(true)} style={{ ...secondaryBtn, width: '100%', justifyContent: 'flex-start' }}>
+                <EditIcon size={13}/> Edit profile
               </button>
             </div>
-            <button type="submit" className="btn btn-primary" disabled={sending || !msgBody.trim()} style={{ alignSelf: 'flex-end' }}>
-              {sending ? 'Sending…' : `Send ${msgChannel === 'email' ? 'Email' : 'SMS'}`}
-            </button>
           </div>
-          {msgChannel === 'sms' && msgBody.length > 0 && (
-            <div style={{ fontSize: 12, color: '#95a5b3', marginTop: 4 }}>{msgBody.length} / 160 chars</div>
-          )}
-        </form>
+        </div>
       </div>
 
+      {/* Edit modal */}
       {showEdit && (
-        <Modal title="Edit Contact" onClose={() => setShowEdit(false)}>
+        <Modal title="Edit Patient" onClose={() => setShowEdit(false)}>
           <form onSubmit={handleEditSubmit}>
             <div className="form-row">
               <div className="form-group">
@@ -325,12 +320,173 @@ export default function ContactDetail() {
 
       {showDeleteConfirm && (
         <ConfirmDialog
-          message="This will permanently delete the contact and all their notes."
+          message="This will permanently delete the patient and all their notes."
           onConfirm={handleDeleteConfirm}
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
-
     </div>
   );
 }
+
+function TimelineTab({ notes, messages, contact }) {
+  const events = [
+    ...notes.map(n => ({ type: 'note', time: new Date(n.created_at), text: n.content, id: `n${n.id}` })),
+    ...messages.map(m => ({ type: 'message', time: new Date(m.created_at), text: m.body, subject: m.subject, ch: m.channel, id: `m${m.id}`, status: m.status })),
+  ].sort((a, b) => b.time - a.time);
+
+  const typeMeta = {
+    message: { color: T.accent,   label: 'Message' },
+    note:    { color: T.warn,     label: 'Note' },
+  };
+
+  if (events.length === 0) return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '40px 24px', textAlign: 'center', color: T.textFaint, fontSize: 13 }}>
+      No activity yet
+    </div>
+  );
+
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '8px 0' }}>
+      {events.map((e, i) => {
+        const meta = typeMeta[e.type];
+        const isLast = i === events.length - 1;
+        return (
+          <div key={e.id} style={{ display: 'flex', gap: 14, padding: '12px 18px', position: 'relative' }}>
+            <div style={{ position: 'relative', width: 12, flexShrink: 0 }}>
+              <span style={{ position: 'absolute', top: 4, left: 0, width: 10, height: 10, borderRadius: '50%', background: meta.color, border: `2px solid ${T.surface}`, boxShadow: `0 0 0 1px ${T.border}` }}/>
+              {!isLast && <span style={{ position: 'absolute', top: 16, bottom: -12, left: 4, width: 2, background: T.border }}/>}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
+                <span style={{ fontSize: 10, color: meta.color, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{meta.label}</span>
+                {e.ch && <ChannelChip channel={e.ch} size={10}/>}
+                {e.subject && <span style={{ fontSize: 11.5, color: T.textDim, fontWeight: 500 }}>· {e.subject}</span>}
+                <span style={{ marginLeft: 'auto', fontSize: 10.5, color: T.textFaint, fontFamily: T.mono }}>
+                  {e.time.toLocaleString()}
+                </span>
+              </div>
+              <div style={{
+                fontSize: 13, color: T.text, lineHeight: 1.5,
+                padding: '8px 12px', borderRadius: 7,
+                background: e.type === 'message' ? T.accentSoft : T.surfaceAlt,
+                border: `1px solid ${e.type === 'message' ? T.accentSoft : T.border}`,
+              }}>
+                {e.text}
+              </div>
+              {e.status === 'failed' && (
+                <span style={{ fontSize: 10.5, color: T.danger, marginTop: 3, display: 'block' }}>⚠ Delivery failed</span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MessagesTab({ messages, msgChannel, setMsgChannel, msgSubject, setMsgSubject, msgBody, setMsgBody, msgBodyRef, sending, onSend, onInsertBooking }) {
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Messages <span style={{ color: T.textFaint, fontWeight: 400 }}>({messages.length})</span></h3>
+        <div className="channel-tabs">
+          <button className={`channel-tab${msgChannel === 'email' ? ' active' : ''}`} onClick={() => setMsgChannel('email')}>✉ Email</button>
+          <button className={`channel-tab${msgChannel === 'sms' ? ' active' : ''}`} onClick={() => setMsgChannel('sms')}>💬 SMS</button>
+        </div>
+      </div>
+
+      <div className="message-thread">
+        {messages.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '20px 0', color: T.textFaint, fontSize: 13 }}>No messages yet. Send the first one below.</div>
+        ) : messages.map(msg => (
+          <div key={msg.id} className={`message-bubble${msg.status === 'failed' ? ' failed' : ''}`}>
+            <div className="message-meta">
+              <ChannelChip channel={msg.channel} size={11}/>
+              {msg.subject && <span className="message-subject">{msg.subject}</span>}
+              {msg.status === 'failed' && <span className="message-failed">failed</span>}
+              <span className="message-time">{new Date(msg.created_at).toLocaleString()}</span>
+            </div>
+            <p className="message-body">{msg.body}</p>
+          </div>
+        ))}
+      </div>
+
+      <form onSubmit={onSend} className="message-compose">
+        {msgChannel === 'email' && (
+          <input value={msgSubject} onChange={e => setMsgSubject(e.target.value)} placeholder="Subject (optional)" className="message-subject-input"/>
+        )}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <textarea
+              ref={msgBodyRef}
+              value={msgBody}
+              onChange={e => setMsgBody(e.target.value)}
+              placeholder={msgChannel === 'email' ? 'Write your email…' : 'Write your SMS…'}
+              className="message-body-input"
+              maxLength={msgChannel === 'sms' ? 1600 : undefined}
+              onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) onSend(e); }}
+            />
+            <button type="button" className="insert-link-btn" onClick={onInsertBooking}>
+              📅 Insert booking link
+            </button>
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={sending || !msgBody.trim()} style={{ alignSelf: 'flex-end' }}>
+            {sending ? 'Sending…' : `Send ${msgChannel === 'email' ? 'Email' : 'SMS'}`}
+          </button>
+        </div>
+        {msgChannel === 'sms' && msgBody.length > 0 && (
+          <div style={{ fontSize: 11, color: T.textFaint, marginTop: 4 }}>{msgBody.length} / 160 chars</div>
+        )}
+      </form>
+    </div>
+  );
+}
+
+function NotesTab({ notes, noteText, setNoteText, savingNote, onAdd, onDelete }) {
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 }}>
+      <h3 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 600 }}>Notes <span style={{ color: T.textFaint, fontWeight: 400 }}>({notes.length})</span></h3>
+      <form onSubmit={onAdd} className="note-form">
+        <textarea
+          value={noteText}
+          onChange={e => setNoteText(e.target.value)}
+          placeholder="Add a note… (Enter to submit)"
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onAdd(e); } }}
+        />
+        <button type="submit" className="btn btn-primary" disabled={savingNote || !noteText.trim()}>Add</button>
+      </form>
+      {notes.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '20px 0', color: T.textFaint, fontSize: 13 }}>No notes yet.</div>
+      ) : (
+        <div className="notes-list">
+          {notes.map(note => (
+            <div key={note.id} className="note-item">
+              <p className="note-content">{note.content}</p>
+              <p className="note-date">{new Date(note.created_at).toLocaleString()}</p>
+              <button className="note-delete" onClick={() => onDelete(note.id)} title="Delete note">×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const primaryBtn = {
+  padding: '8px 14px', borderRadius: 7, background: '#2E8C82', color: '#fff',
+  border: 'none', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+  display: 'inline-flex', alignItems: 'center', gap: 6,
+};
+
+const secondaryBtn = {
+  padding: '8px 14px', borderRadius: 7, background: '#fff', color: '#0F1419',
+  border: '1px solid #E7E4DC', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
+  display: 'inline-flex', alignItems: 'center', gap: 6,
+};
+
+const iconBtn = {
+  width: 34, height: 34, borderRadius: 7, border: '1px solid #E7E4DC',
+  background: '#fff', color: '#5C6470',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0,
+};

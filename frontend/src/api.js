@@ -38,3 +38,10 @@ export const deleteJourney = (id) => request(`/journeys/${id}`, { method: 'DELET
 export const runJourney = (id) => request(`/journeys/${id}/run`, { method: 'POST' });
 export const sendMessage = (contact_id, channel, body, subject = '') =>
   request('/messages/send', { method: 'POST', body: { contact_id, channel, body, subject } });
+
+export const fetchAppointments = (start, end) =>
+  request(`/appointments?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+export const createAppointment = (data) => request('/appointments', { method: 'POST', body: data });
+export const updateAppointment = (id, data) => request(`/appointments/${id}`, { method: 'PUT', body: data });
+export const deleteAppointment = (id) => request(`/appointments/${id}`, { method: 'DELETE' });
+export const sendSchedule = (data) => request('/appointments/send', { method: 'POST', body: data });

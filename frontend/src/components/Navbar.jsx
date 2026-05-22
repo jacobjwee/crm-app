@@ -19,6 +19,10 @@ export default function Navbar() {
           <span className="nav-icon">📣</span>
           Campaigns
         </NavLink>
+        <NavLink to="/schedule">
+          <span className="nav-icon">📅</span>
+          Schedule
+        </NavLink>
       </nav>
     </div>
   );

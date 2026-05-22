@@ -100,6 +100,19 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS appointments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contact_id INTEGER,
+    title TEXT NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    notes TEXT,
+    status TEXT DEFAULT 'scheduled',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL
+  );
 `);
 
 // Add next_run_at to journeys if not present (safe migration)

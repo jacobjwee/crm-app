@@ -7,6 +7,7 @@ const dashboardRouter = require('./routes/dashboard');
 const messagesRouter = require('./routes/messages');
 const campaignsRouter = require('./routes/campaigns');
 const journeysRouter = require('./routes/journeys');
+const appointmentsRouter = require('./routes/appointments');
 const { startScheduler } = require('./lib/campaignRunner');
 const { startJourneyScheduler } = require('./lib/journeyRunner');
 
@@ -22,6 +23,7 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/api/campaigns', campaignsRouter);
 app.use('/api/journeys', journeysRouter);
+app.use('/api/appointments', appointmentsRouter);
 
 app.listen(PORT, () => {
   console.log(`CRM backend running on http://localhost:${PORT}`);

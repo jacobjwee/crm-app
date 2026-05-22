@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { fireTrigger } = require('../lib/campaignRunner');
 
 router.get('/', (req, res) => {
   const { search } = req.query;
@@ -33,6 +34,7 @@ router.post('/', (req, res) => {
   `).run(name.trim(), email || null, phone || null, company || null, status || 'active');
 
   const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(result.lastInsertRowid);
+  fireTrigger('contact_created', contact).catch(() => {});
   res.status(201).json(contact);
 });
 
@@ -54,6 +56,9 @@ router.put('/:id', (req, res) => {
   );
 
   const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(req.params.id);
+  if (status && status !== existing.status) {
+    fireTrigger('status_changed', contact, status).catch(() => {});
+  }
   res.json(contact);
 });
 

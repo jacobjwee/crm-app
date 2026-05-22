@@ -25,6 +25,36 @@ db.exec(`
     FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
   );
 
+  CREATE TABLE IF NOT EXISTS campaigns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    channel TEXT NOT NULL,
+    type TEXT NOT NULL,
+    subject TEXT,
+    body TEXT NOT NULL,
+    status TEXT DEFAULT 'active',
+    audience_filter TEXT DEFAULT 'all',
+    schedule_type TEXT,
+    schedule_at TEXT,
+    schedule_day INTEGER,
+    trigger_type TEXT,
+    trigger_value TEXT,
+    next_run_at TEXT,
+    last_run_at TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS campaign_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER NOT NULL,
+    contact_id INTEGER,
+    status TEXT DEFAULT 'sent',
+    error TEXT,
+    ran_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+    FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL
+  );
+
   CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     contact_id INTEGER NOT NULL,

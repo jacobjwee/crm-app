@@ -24,5 +24,11 @@ export const createNote = (contactId, content) =>
   request('/notes', { method: 'POST', body: { contact_id: contactId, content } });
 export const deleteNote = (id) => request(`/notes/${id}`, { method: 'DELETE' });
 export const fetchMessages = (contactId) => request(`/messages/contact/${contactId}`);
+export const fetchCampaigns = () => request('/campaigns');
+export const fetchCampaign = (id) => request(`/campaigns/${id}`);
+export const createCampaign = (data) => request('/campaigns', { method: 'POST', body: data });
+export const updateCampaign = (id, data) => request(`/campaigns/${id}`, { method: 'PUT', body: data });
+export const deleteCampaign = (id) => request(`/campaigns/${id}`, { method: 'DELETE' });
+export const runCampaign = (id) => request(`/campaigns/${id}/run`, { method: 'POST' });
 export const sendMessage = (contact_id, channel, body, subject = '') =>
   request('/messages/send', { method: 'POST', body: { contact_id, channel, body, subject } });

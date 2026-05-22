@@ -15,6 +15,10 @@ export default function Navbar() {
           <span className="nav-icon">👥</span>
           Contacts
         </NavLink>
+        <NavLink to="/campaigns">
+          <span className="nav-icon">📣</span>
+          Campaigns
+        </NavLink>
       </nav>
     </div>
   );

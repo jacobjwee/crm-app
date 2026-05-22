@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
 import Contacts from './pages/Contacts';
 import ContactDetail from './pages/ContactDetail';
+import Campaigns from './pages/Campaigns';
 import Toaster from './components/Toaster';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/contacts/:id" element={<ContactDetail />} />
+            <Route path="/campaigns" element={<Campaigns />} />
           </Routes>
         </main>
       </div>

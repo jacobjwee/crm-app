@@ -521,6 +521,15 @@ tbody tr:hover td {
   gap: 6px;
 }
 
+/* Campaign config box */
+.campaign-config-box {
+  background: #f8f9fb;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #eef0f3;
+}
+
 /* Channel tabs */
 .channel-tabs {
   display: flex;

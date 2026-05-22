@@ -11,6 +11,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { fetchJourney, createJourney, updateJourney } from '../api';
 import { toast } from '../lib/toast';
+import RichEmailEditor from '../components/RichEmailEditor';
 
 // ─── Step metadata ─────────────────────────────────────────────────────────
 const STEP_TYPES = {
@@ -61,18 +62,13 @@ function WaitEditor({ config, onChange }) {
 
 function SendEmailEditor({ config, onChange }) {
   return (
-    <div className="step-fields" style={{ flexDirection: 'column', gap: 8 }}>
+    <div className="step-fields" style={{ flexDirection: 'column', gap: 10 }}>
       <input
         value={config.subject ?? ''} placeholder="Subject line…"
         onChange={e => onChange({ ...config, subject: e.target.value })}
         className="step-text-input"
       />
-      <textarea
-        value={config.body ?? ''} placeholder="Email body…"
-        onChange={e => onChange({ ...config, body: e.target.value })}
-        className="step-textarea"
-        rows={3}
-      />
+      <RichEmailEditor config={config} onChange={onChange} />
     </div>
   );
 }

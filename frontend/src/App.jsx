@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Contacts from './pages/Contacts';
 import ContactDetail from './pages/ContactDetail';
 import Campaigns from './pages/Campaigns';
+import JourneyBuilder from './pages/JourneyBuilder';
 import Toaster from './components/Toaster';
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/contacts/:id" element={<ContactDetail />} />
             <Route path="/campaigns" element={<Campaigns />} />
+            <Route path="/campaigns/:id/edit" element={<JourneyBuilder />} />
           </Routes>
         </main>
       </div>

@@ -30,5 +30,11 @@ export const createCampaign = (data) => request('/campaigns', { method: 'POST', 
 export const updateCampaign = (id, data) => request(`/campaigns/${id}`, { method: 'PUT', body: data });
 export const deleteCampaign = (id) => request(`/campaigns/${id}`, { method: 'DELETE' });
 export const runCampaign = (id) => request(`/campaigns/${id}/run`, { method: 'POST' });
+export const fetchJourneys = () => request('/journeys');
+export const fetchJourney = (id) => request(`/journeys/${id}`);
+export const createJourney = (data) => request('/journeys', { method: 'POST', body: data });
+export const updateJourney = (id, data) => request(`/journeys/${id}`, { method: 'PUT', body: data });
+export const deleteJourney = (id) => request(`/journeys/${id}`, { method: 'DELETE' });
+export const runJourney = (id) => request(`/journeys/${id}/run`, { method: 'POST' });
 export const sendMessage = (contact_id, channel, body, subject = '') =>
   request('/messages/send', { method: 'POST', body: { contact_id, channel, body, subject } });

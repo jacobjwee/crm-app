@@ -521,6 +521,348 @@ tbody tr:hover td {
   gap: 6px;
 }
 
+/* ── Journey list ─────────────────────────────────────────────────────────── */
+.journey-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.journey-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: box-shadow 0.15s;
+}
+
+.journey-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+
+.journey-card-left { flex: 1; min-width: 0; }
+
+.journey-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a2332;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.journey-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.journey-card-meta {
+  font-size: 13px;
+  color: #7f8c9a;
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.journey-card-stats {
+  font-size: 12px;
+  color: #95a5b3;
+  display: flex;
+  gap: 6px;
+}
+
+.meta-sep { color: #c8d0da; }
+
+.journey-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Journey builder ──────────────────────────────────────────────────────── */
+.journey-builder {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 64px);
+}
+
+.builder-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  margin-bottom: 28px;
+}
+
+.journey-name-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a2332;
+  background: transparent;
+  min-width: 0;
+}
+
+.journey-name-input::placeholder { color: #c8d0da; }
+
+.builder-canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0 60px;
+  width: 100%;
+}
+
+/* Step cards */
+.journey-step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 560px;
+  max-width: 100%;
+}
+
+.journey-step-card {
+  flex: 1;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.trigger-card {
+  background: #f5f0ff;
+  border-left: 4px solid #6c5ce7;
+  width: 560px;
+  max-width: 100%;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.step-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.step-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #b0bec5;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+.step-delete-btn:hover { color: #e74c3c; }
+
+.drag-handle {
+  cursor: grab;
+  font-size: 18px;
+  color: #c8d0da;
+  padding: 16px 4px;
+  user-select: none;
+  transition: color 0.15s;
+}
+.drag-handle:hover { color: #7f8c9a; }
+.drag-handle:active { cursor: grabbing; }
+
+/* Step fields */
+.step-fields {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.step-inline-input {
+  padding: 6px 10px;
+  border: 1.5px solid #e0e4ea;
+  border-radius: 7px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  background: white;
+  color: #1a2332;
+  transition: border-color 0.15s;
+}
+.step-inline-input:focus { border-color: #4facfe; }
+
+.step-inline-select {
+  padding: 6px 10px;
+  border: 1.5px solid #e0e4ea;
+  border-radius: 7px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  background: white;
+  color: #1a2332;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.step-inline-select:focus { border-color: #4facfe; }
+
+.step-text-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid #e0e4ea;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  background: white;
+  transition: border-color 0.15s;
+}
+.step-text-input:focus { border-color: #4facfe; }
+
+.step-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid #e0e4ea;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  background: white;
+  transition: border-color 0.15s;
+}
+.step-textarea:focus { border-color: #4facfe; }
+
+/* Trigger chips */
+.trigger-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 32px;
+  align-items: center;
+}
+
+.trigger-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  border: 1.5px solid #d5cafe;
+  color: #6c5ce7;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.trigger-chip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #a29bfe;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.15s;
+}
+.trigger-chip button:hover { color: #6c5ce7; }
+
+.trigger-audience {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Connector + Add Step */
+.journey-connector {
+  width: 2px;
+  height: 20px;
+  background: #dde1e9;
+  margin: 0 auto;
+}
+
+.add-step-wrapper {
+  width: 560px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.add-step-btn {
+  padding: 6px 18px;
+  border: 2px dashed #c8d0da;
+  border-radius: 20px;
+  background: white;
+  color: #7f8c9a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.add-step-btn:hover {
+  border-color: #4facfe;
+  color: #4facfe;
+  background: #f0f8ff;
+}
+
+.step-picker {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  border: 1px solid #eef0f3;
+  padding: 8px;
+  display: flex;
+  gap: 6px;
+  z-index: 200;
+  white-space: nowrap;
+}
+
+.step-picker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #2c3e50;
+  transition: background 0.15s;
+  min-width: 72px;
+}
+.step-picker-item:hover { background: #f5f6fa; }
+
 /* Campaign config box */
 .campaign-config-box {
   background: #f8f9fb;

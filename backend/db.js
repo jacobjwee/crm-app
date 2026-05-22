@@ -55,6 +55,40 @@ db.exec(`
     FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL
   );
 
+  CREATE TABLE IF NOT EXISTS journeys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    status TEXT DEFAULT 'draft',
+    steps TEXT DEFAULT '[]',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS journey_enrollments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    journey_id INTEGER NOT NULL,
+    contact_id INTEGER NOT NULL,
+    step_index INTEGER DEFAULT 1,
+    status TEXT DEFAULT 'active',
+    resume_at TEXT,
+    enrolled_at TEXT DEFAULT (datetime('now')),
+    completed_at TEXT,
+    FOREIGN KEY (journey_id) REFERENCES journeys(id) ON DELETE CASCADE,
+    FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS journey_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    journey_id INTEGER NOT NULL,
+    contact_id INTEGER,
+    step_index INTEGER,
+    step_type TEXT,
+    status TEXT,
+    error TEXT,
+    ran_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (journey_id) REFERENCES journeys(id) ON DELETE CASCADE
+  );
+
   CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     contact_id INTEGER NOT NULL,

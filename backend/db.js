@@ -117,5 +117,7 @@ db.exec(`
 
 // Add next_run_at to journeys if not present (safe migration)
 try { db.exec('ALTER TABLE journeys ADD COLUMN next_run_at TEXT'); } catch (_) {}
+// Track external message IDs (e.g. IMAP Message-ID) to avoid duplicate imports
+try { db.exec('ALTER TABLE messages ADD COLUMN external_id TEXT UNIQUE'); } catch (_) {}
 
 module.exports = db;

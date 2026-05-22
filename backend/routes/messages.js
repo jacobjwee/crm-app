@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { syncInbox } = require('../lib/imapSync');
 
 function getMailer() {
   const nodemailer = require('nodemailer');
@@ -19,6 +20,15 @@ function getTwilio() {
   const twilio = require('twilio');
   return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
+
+router.post('/sync', async (req, res) => {
+  try {
+    const result = await syncInbox();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.get('/threads', (req, res) => {
   const threads = db.prepare(`

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchInboxThreads, fetchMessages, sendMessage, fetchContacts } from '../api';
+import { fetchInboxThreads, fetchMessages, sendMessage, fetchContacts, syncInboxMessages } from '../api';
 import { toast } from '../lib/toast';
 import {
   Avatar, ChannelChip,
@@ -52,6 +52,7 @@ export default function Inbox() {
   const [contactResults, setContactResults] = useState([]);
   const [expandedMsg,    setExpandedMsg]    = useState(null);
   const [hoveredMsg,     setHoveredMsg]     = useState(null);
+  const [syncing,        setSyncing]        = useState(false);
   const msgsEndRef = useRef(null);
   const navigate   = useNavigate();
 
@@ -135,6 +136,32 @@ export default function Inbox() {
     setContactResults([]);
   }
 
+  async function handleSync() {
+    setSyncing(true);
+    try {
+      const { imported } = await syncInboxMessages();
+      if (imported > 0) {
+        toast.success(`${imported} new message${imported !== 1 ? 's' : ''} synced`);
+        const data = await fetchInboxThreads();
+        setThreads(data);
+        if (activeThread) {
+          const updated = data.find(t => t.contact_id === activeThread.contact_id);
+          if (updated) {
+            setActiveThread(updated);
+            const msgs = await fetchMessages(activeThread.contact_id);
+            setMessages(msgs);
+          }
+        }
+      } else {
+        toast.success('Inbox up to date');
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   const filtered = threads.filter(t =>
     !search || t.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -157,6 +184,21 @@ export default function Inbox() {
             <span style={{ fontSize: 11, fontFamily: T.mono, color: T.textFaint, background: T.surfaceAlt, border: `1px solid ${T.border}`, padding: '2px 7px', borderRadius: 10 }}>
               {threads.length}
             </span>
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              title="Sync email replies from Gmail"
+              style={{
+                padding: '4px 10px', borderRadius: 6, border: `1px solid ${T.border}`,
+                background: T.surface, color: syncing ? T.textFaint : T.accent,
+                fontFamily: 'inherit', fontSize: 11.5, fontWeight: 600,
+                cursor: syncing ? 'not-allowed' : 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              <span style={{ display: 'inline-block', animation: syncing ? 'spin 1s linear infinite' : 'none' }}>↻</span>
+              {syncing ? 'Syncing…' : 'Sync'}
+            </button>
           </div>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px',
